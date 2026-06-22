@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ScatterChart, Scatter, Legend } from 'recharts';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ScatterChart, Scatter, Legend, Cell } from 'recharts';
 import { Card, CardTitle, LiveBadge, Pill } from '../components/Shared';
 import { POLLUTED_CITIES, CLEAN_CITIES, aqiColor, aqiCat, aqiCatClass, randArr, rand } from '../data/constants';
 
