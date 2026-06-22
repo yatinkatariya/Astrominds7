@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Card, CardTitle, SelectInput } from '../components/Shared';
 import { rand } from '../data/constants';
+import { useCity } from '../context/CityContext';
 
 const tt = { backgroundColor: 'rgba(15,22,46,0.95)', border: '1px solid rgba(99,179,237,0.3)', borderRadius: 8, color: '#e8eef8', fontSize: 12 };
 const windData = Array.from({ length: 24 }, (_, i) => ({ hour: `${i}:00`, speed: parseFloat(rand(1, 8).toFixed(1)) }));
@@ -16,6 +17,7 @@ const pieData = [
 ];
 
 export default function Transport() {
+  const { cityData } = useCity();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
 
@@ -46,7 +48,7 @@ export default function Transport() {
 
   return (
     <div style={{ animation: 'fadeIn .3s ease', padding: '1.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '.75rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap', gap: '.75rem' }}>
         <div>
           <h1 style={{ fontFamily: 'var(--font-head)', fontSize: '1.5rem', fontWeight: 700 }}>Pollution Transport Analysis</h1>
           <p style={{ fontSize: '.85rem', color: 'var(--text-secondary)', marginTop: '.25rem' }}>ERA5 wind fields — source-to-receptor pathway modelling</p>
@@ -63,6 +65,34 @@ export default function Transport() {
               { value: 'Jharkhand → Odisha', label: 'Jharkhand → Odisha' },
             ]}
           />
+        </div>
+      </div>
+
+      {/* City Focus Banner */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '.75rem', marginBottom: '1.25rem', padding: '.85rem 1rem', background: 'var(--bg-glass)', border: '1px solid rgba(59,130,246,0.25)', borderLeft: '3px solid #3b82f6', borderRadius: 10 }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.2rem' }}>📍 Receptor City</div>
+          <div style={{ fontFamily: 'var(--font-head)', fontSize: '.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>{cityData.city}</div>
+          <div style={{ fontSize: '.7rem', color: 'var(--text-muted)' }}>{cityData.state}</div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.2rem' }}>Wind Speed</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', fontWeight: 700, color: cityData.wind < 3 ? '#ef4444' : '#22c55e' }}>{cityData.wind} m/s</div>
+          <div style={{ fontSize: '.7rem', color: 'var(--text-muted)' }}>ERA5 10m wind</div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.2rem' }}>Source Region</div>
+          <div style={{ fontFamily: 'var(--font-head)', fontSize: '.88rem', fontWeight: 700, color: '#f97316' }}>
+            {cityData.fire > 80 ? cityData.state : cityData.aqi > 200 ? 'Punjab / Haryana' : 'Local Emissions'}
+          </div>
+          <div style={{ fontSize: '.7rem', color: 'var(--text-muted)' }}>dominant source</div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.2rem' }}>Transport Risk</div>
+          <div style={{ fontFamily: 'var(--font-head)', fontSize: '.95rem', fontWeight: 700, color: cityData.wind < 2 ? '#ef4444' : cityData.wind < 4 ? '#f97316' : '#22c55e' }}>
+            {cityData.wind < 2 ? 'Extreme' : cityData.wind < 4 ? 'High' : 'Moderate'}
+          </div>
+          <div style={{ fontSize: '.7rem', color: 'var(--text-muted)' }}>stagnation index</div>
         </div>
       </div>
 

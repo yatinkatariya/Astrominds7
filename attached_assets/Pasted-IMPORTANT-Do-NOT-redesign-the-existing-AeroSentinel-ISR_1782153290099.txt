@@ -1,0 +1,323 @@
+IMPORTANT: Do NOT redesign the existing AeroSentinel ISRO UI. Keep all current styling, layout, colors, cards, charts, navigation, spacing, glassmorphism effects, and responsiveness exactly the same.
+
+I want to add a Global City Search & Dynamic Dashboard Update System.
+
+====================================================
+MAIN REQUIREMENT
+================
+
+The Dashboard is the landing page.
+
+Users must be able to search and select any city from India.
+
+When the city changes, ALL dashboard widgets must automatically update.
+
+This should work without affecting any existing functionality.
+
+====================================================
+FEATURE 1: GLOBAL CITY SEARCH BAR
+=================================
+
+Add a prominent search bar at the top of Dashboard.
+
+Placeholder:
+
+"Search City (Delhi, Ahmedabad, Surat, Mumbai...)"
+
+Features:
+
+* Search as user types.
+* Autocomplete suggestions.
+* Keyboard navigation.
+* Search icon.
+* Clear button.
+* Recently searched cities.
+
+Example cities:
+
+Delhi
+Mumbai
+Ahmedabad
+Surat
+Pune
+Chandigarh
+Jaipur
+Lucknow
+Bangalore
+Hyderabad
+Kolkata
+Chennai
+
+====================================================
+FEATURE 2: CITY SELECTOR DROPDOWN
+=================================
+
+Beside search bar add:
+
+Current City Dropdown
+
+Example:
+
+[ New Delhi ▼ ]
+
+User can switch cities instantly.
+
+====================================================
+FEATURE 3: GLOBAL APPLICATION STATE
+===================================
+
+Create global selectedCity state.
+
+When city changes:
+
+selectedCity = "Ahmedabad"
+
+Automatically update every page and component.
+
+Use React Context or Zustand.
+
+====================================================
+FEATURE 4: DASHBOARD AUTO UPDATE
+================================
+
+When city changes:
+
+Update:
+
+Live AQI Gauge
+
+AQI Category
+
+City Name
+
+Temperature
+
+Humidity
+
+Wind Speed
+
+PM2.5
+
+PM10
+
+NO₂
+
+SO₂
+
+O₃
+
+CO
+
+Live Alerts
+
+AQI Status
+
+Health Recommendations
+
+All KPI Cards
+
+====================================================
+FEATURE 5: MAP AUTO FOCUS
+=========================
+
+When city changes:
+
+Map should:
+
+* Zoom to selected city.
+* Center map automatically.
+* Highlight selected city.
+* Open city popup.
+
+====================================================
+FEATURE 6: HCHO PAGE AUTO UPDATE
+================================
+
+When city changes:
+
+Update:
+
+HCHO Value
+
+Nearest Hotspot
+
+Risk Level
+
+Fire Count
+
+Trend
+
+====================================================
+FEATURE 7: FIRE ANALYSIS AUTO UPDATE
+====================================
+
+Update:
+
+Fire Activity
+
+Fire Timeline
+
+Fire Count
+
+Biomass Burning Risk
+
+====================================================
+FEATURE 8: TRANSPORT PAGE AUTO UPDATE
+=====================================
+
+Update:
+
+Wind Direction
+
+Source Region
+
+Affected Region
+
+Transport Risk
+
+====================================================
+FEATURE 9: AI PREDICT PAGE AUTO UPDATE
+======================================
+
+When user selects a city:
+
+Auto-fill current city values:
+
+PM2.5
+PM10
+NO₂
+SO₂
+O₃
+CO
+Temperature
+Humidity
+Wind Speed
+
+Show:
+
+Current AQI
+
+Predicted AQI
+
+24h Forecast
+
+====================================================
+FEATURE 10: BACKEND SUPPORT
+===========================
+
+Create endpoint:
+
+GET /api/cities
+
+Return:
+
+[
+"Delhi",
+"Mumbai",
+"Ahmedabad",
+"Surat",
+"Pune"
+]
+
+Create endpoint:
+
+GET /api/city-data/<city>
+
+Return:
+
+{
+"city":"Ahmedabad",
+"aqi":120,
+"pm25":55,
+"pm10":88,
+"no2":30,
+"so2":12,
+"o3":40,
+"co":1.1,
+"temp":34,
+"humidity":62,
+"wind":3.5,
+"hcho":0.00015,
+"fireCount":45
+}
+
+====================================================
+FEATURE 11: DASHBOARD HEADER
+============================
+
+Above AQI gauge display:
+
+Selected City
+
+State
+
+Country
+
+Current Date
+
+Last Updated Time
+
+Example:
+
+Ahmedabad, Gujarat, India
+
+Last Updated:
+15 Nov 2024 | 12:45 PM
+
+====================================================
+FEATURE 12: QUICK CITY CHIPS
+============================
+
+Below search bar add:
+
+[ Delhi ]
+[ Mumbai ]
+[ Ahmedabad ]
+[ Surat ]
+[ Bangalore ]
+
+Clicking instantly changes dashboard.
+
+====================================================
+FEATURE 13: LOADING EXPERIENCE
+==============================
+
+When city changes:
+
+Show loading skeletons.
+
+Display:
+
+"Loading city data..."
+
+Then animate values into place.
+
+====================================================
+FEATURE 14: FUTURE READY
+========================
+
+Structure system so future data can come from:
+
+* CPCB
+* Sentinel-5P
+* INSAT-3D
+* ERA5
+* MODIS/VIIRS
+
+without changing UI.
+
+====================================================
+IMPORTANT
+=========
+
+Do NOT change existing design.
+
+Only add:
+
+* Global City Search
+* City Dropdown
+* Dynamic Data Updates
+* Shared Application State
+* Cross-page Synchronization
+
+The Dashboard should become the central command center where selecting a city updates the entire AeroSentinel platform automatically.

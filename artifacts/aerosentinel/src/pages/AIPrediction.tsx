@@ -1,14 +1,15 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   LineChart, Line, AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell,
 } from 'recharts';
 import { Card, CardTitle, Pill } from '../components/Shared';
 import { aqiColor, aqiCat, aqiCatClass, POLL_INPUTS, MET_INPUTS, PRESETS, rand } from '../data/constants';
+import { useCity, ALL_CITIES } from '../context/CityContext';
 
 const tt = { backgroundColor: 'rgba(15,22,46,0.95)', border: '1px solid rgba(99,179,237,0.3)', borderRadius: 8, color: '#e8eef8', fontSize: 12 };
 
-const CITIES = ['Delhi', 'Ghaziabad', 'Mumbai', 'Ahmedabad', 'Surat', 'Pune', 'Lucknow', 'Chandigarh', 'Kolkata', 'Chennai', 'Bengaluru', 'Hyderabad'];
+const CITIES = ALL_CITIES;
 
 const advisoryFor = (aqi: number) => {
   if (aqi <= 50)  return [{ icon: '✅', title: 'Safe Outdoors', text: 'Air quality is excellent. All outdoor activities are safe. Great day for a run!' }];
@@ -83,7 +84,10 @@ type PredResult = {
 
 export default function AIPrediction() {
   const [mode, setMode] = useState<'city' | 'manual'>('city');
-  const [city, setCity] = useState('Delhi');
+  const { selectedCity: globalCity, selectCity: setGlobalCity } = useCity();
+  const [city, setCity] = useState(globalCity);
+
+  useEffect(() => { setCity(globalCity); }, [globalCity]);
   const [sliders, setSliders] = useState<Record<string, number>>(() => {
     const init: Record<string, number> = {};
     [...POLL_INPUTS, ...MET_INPUTS].forEach(p => { init[p.key] = p.val; });

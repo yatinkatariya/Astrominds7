@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ScatterChart, Scatter } from 'recharts';
 import { Card, CardTitle, KpiCard, TrendArrow } from '../components/Shared';
 import { STATE_FIRES, rand, randArr } from '../data/constants';
+import { useCity } from '../context/CityContext';
 
 const tt = { backgroundColor: 'rgba(15,22,46,0.95)', border: '1px solid rgba(99,179,237,0.3)', borderRadius: 8, color: '#e8eef8', fontSize: 12 };
 const days30 = Array.from({ length: 30 }, (_, i) => ({ day: String(i + 1), count: Math.round(rand(10, 120)) }));
@@ -9,6 +10,7 @@ const fireAQI = Array.from({ length: 25 }, () => ({ fires: Math.round(rand(10, 2
 const monthlyFire = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => ({ month: m, fires: [12,18,34,42,28,14,8,6,24,68,84,42][i] }));
 
 export default function FireAnalysis() {
+  const { cityData } = useCity();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
 
@@ -38,7 +40,7 @@ export default function FireAnalysis() {
 
   return (
     <div style={{ animation: 'fadeIn .3s ease', padding: '1.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '.75rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap', gap: '.75rem' }}>
         <div>
           <h1 style={{ fontFamily: 'var(--font-head)', fontSize: '1.5rem', fontWeight: 700 }}>Fire Activity Analysis</h1>
           <p style={{ fontSize: '.85rem', color: 'var(--text-secondary)', marginTop: '.25rem' }}>MODIS/VIIRS active fire detection — biomass burning & crop residue events</p>
@@ -46,6 +48,32 @@ export default function FireAnalysis() {
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '.35rem', fontSize: '.72rem', color: 'var(--good)', fontFamily: 'var(--font-mono)' }}>
           <span style={{ width: 6, height: 6, background: 'var(--good)', borderRadius: '50%', animation: 'pulse 1.5s infinite', display: 'inline-block' }} />
           FIRMS data stream
+        </div>
+      </div>
+
+      {/* City Focus Banner */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '.75rem', marginBottom: '1.5rem', padding: '.85rem 1rem', background: 'var(--bg-glass)', border: '1px solid rgba(239,68,68,0.25)', borderLeft: '3px solid #ef4444', borderRadius: 10 }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.2rem' }}>📍 Focus City</div>
+          <div style={{ fontFamily: 'var(--font-head)', fontSize: '.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>{cityData.city}</div>
+          <div style={{ fontSize: '.7rem', color: 'var(--text-muted)' }}>{cityData.state}</div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.2rem' }}>Active Fires</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', fontWeight: 700, color: cityData.fire > 100 ? '#ef4444' : cityData.fire > 50 ? '#f97316' : '#22c55e' }}>{cityData.fire}</div>
+          <div style={{ fontSize: '.7rem', color: 'var(--text-muted)' }}>MODIS/VIIRS</div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.2rem' }}>Biomass Risk</div>
+          <div style={{ fontFamily: 'var(--font-head)', fontSize: '.95rem', fontWeight: 700, color: cityData.fire > 100 ? '#ef4444' : cityData.fire > 50 ? '#f97316' : '#22c55e' }}>
+            {cityData.fire > 100 ? 'Extreme' : cityData.fire > 50 ? 'High' : cityData.fire > 20 ? 'Moderate' : 'Low'}
+          </div>
+          <div style={{ fontSize: '.7rem', color: 'var(--text-muted)' }}>burning index</div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.2rem' }}>AQI Impact</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', fontWeight: 700, color: cityData.aqi > 300 ? '#ef4444' : cityData.aqi > 150 ? '#f97316' : '#22c55e' }}>{cityData.aqi}</div>
+          <div style={{ fontSize: '.7rem', color: 'var(--text-muted)' }}>fire contribution</div>
         </div>
       </div>
 

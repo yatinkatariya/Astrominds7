@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ScatterChart, Scatter } from 'recharts';
 import { Card, CardTitle, BtnNav, TrendArrow, Pill } from '../components/Shared';
 import { HCHO_HOTSPOTS, INDIA_LOCATIONS, aqiColor, aqiCat, rand } from '../data/constants';
+import { useCity } from '../context/CityContext';
 
 const tt = { backgroundColor: 'rgba(15,22,46,0.95)', border: '1px solid rgba(99,179,237,0.3)', borderRadius: 8, color: '#e8eef8', fontSize: 12 };
 const days7 = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -9,6 +10,7 @@ const hchoTs = days7.map((d, i) => ({ day: d, hcho: [8.2, 10.4, 14.2, 16.8, 18.4
 const fireHcho = Array.from({ length: 20 }, () => ({ fires: Math.round(rand(20, 200)), hcho: parseFloat(rand(4, 18).toFixed(1)) }));
 
 export default function HCHOHotspots() {
+  const { cityData } = useCity();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const [filter, setFilter] = useState('daily');
@@ -37,7 +39,7 @@ export default function HCHOHotspots() {
 
   return (
     <div style={{ animation: 'fadeIn .3s ease', padding: '1.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '.75rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap', gap: '.75rem' }}>
         <div>
           <h1 style={{ fontFamily: 'var(--font-head)', fontSize: '1.5rem', fontWeight: 700 }}>HCHO Hotspot Analytics</h1>
           <p style={{ fontSize: '.85rem', color: 'var(--text-secondary)', marginTop: '.25rem' }}>Sentinel-5P TROPOMI formaldehyde column density — biomass burning detection</p>
@@ -46,6 +48,32 @@ export default function HCHOHotspots() {
           {(['daily', 'weekly', 'monthly', 'seasonal'] as const).map(f => (
             <BtnNav key={f} active={filter === f} onClick={() => setFilter(f)}>{f.charAt(0).toUpperCase() + f.slice(1)}</BtnNav>
           ))}
+        </div>
+      </div>
+
+      {/* City Focus Banner */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '.75rem', marginBottom: '1.5rem', padding: '.85rem 1rem', background: 'var(--bg-glass)', border: '1px solid rgba(249,115,22,0.25)', borderLeft: '3px solid #f97316', borderRadius: 10 }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.2rem' }}>📍 Selected City</div>
+          <div style={{ fontFamily: 'var(--font-head)', fontSize: '.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>{cityData.city}</div>
+          <div style={{ fontSize: '.7rem', color: 'var(--text-muted)' }}>{cityData.state}</div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.2rem' }}>HCHO Column</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', fontWeight: 700, color: cityData.hcho > 14 ? '#ef4444' : cityData.hcho > 10 ? '#f97316' : cityData.hcho > 7 ? '#eab308' : '#22c55e' }}>{cityData.hcho}×10¹⁵</div>
+          <div style={{ fontSize: '.7rem', color: 'var(--text-muted)' }}>mol/cm²</div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.2rem' }}>Fire Count</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', fontWeight: 700, color: cityData.fire > 100 ? '#ef4444' : cityData.fire > 50 ? '#f97316' : '#22c55e' }}>{cityData.fire}</div>
+          <div style={{ fontSize: '.7rem', color: 'var(--text-muted)' }}>active fires</div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.2rem' }}>Risk Level</div>
+          <div style={{ fontFamily: 'var(--font-head)', fontSize: '.95rem', fontWeight: 700, color: cityData.hcho > 14 ? '#ef4444' : cityData.hcho > 10 ? '#f97316' : '#22c55e' }}>
+            {cityData.hcho > 14 ? 'Extreme' : cityData.hcho > 10 ? 'High' : cityData.hcho > 7 ? 'Moderate' : 'Low'}
+          </div>
+          <div style={{ fontSize: '.7rem', color: 'var(--text-muted)' }}>HCHO exposure</div>
         </div>
       </div>
 

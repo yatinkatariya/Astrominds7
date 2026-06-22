@@ -214,4 +214,24 @@ router.get("/model-metrics", (_req, res) => {
   });
 });
 
+// ── GET /api/city-data/:city ─────────────────────────────────────────────────
+router.get("/city-data/:city", (req, res) => {
+  const city = req.params.city;
+  const f = CITY_DATA[city];
+  if (!f) {
+    return res.status(404).json({ error: `City '${city}' not found`, available: Object.keys(CITY_DATA) });
+  }
+  const aqi = predictAQI(f);
+  return res.json({
+    city,
+    aqi,
+    pm25: f.pm25, pm10: f.pm10, no2: f.no2, so2: f.so2, o3: f.o3, co: f.co,
+    temp: f.temp, humidity: f.humidity, wind: f.wind_speed,
+    hcho: f.hcho, fireCount: f.fire_count, aod: f.aod,
+    category: getCategory(aqi),
+    lastUpdated: new Date().toISOString(),
+  });
+});
+
 export default router;
+
