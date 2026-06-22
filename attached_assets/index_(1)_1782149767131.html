@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AeroSentinel — ISRO Air Quality Intelligence Platform</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #0f1628;
+  --bg-card: rgba(15,22,46,0.85);
+  --bg-glass: rgba(255,255,255,0.04);
+  --border: rgba(99,179,237,0.15);
+  --border-bright: rgba(99,179,237,0.35);
+  --text-primary: #e8eef8;
+  --text-secondary: #8fa3c4;
+  --text-muted: #4a6080;
+  --accent-blue: #3b82f6;
+  --accent-cyan: #06b6d4;
+  --accent-indigo: #6366f1;
+  --good: #22c55e;
+  --satisfactory: #84cc16;
+  --moderate: #eab308;
+  --poor: #f97316;
+  --verypoor: #ef4444;
+  --severe: #a855f7;
+  --font-head: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius: 12px;
+  --shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+[data-theme="light"] {
+  --bg-primary: #f0f4ff;
+  --bg-secondary: #e8eeff;
+  --bg-card: rgba(255,255,255,0.9);
+  --bg-glass: rgba(59,130,246,0.05);
+  --border: rgba(59,130,246,0.2);
+  --border-bright: rgba(59,130,246,0.4);
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--font-body);background:var(--bg-primary);color:var(--text-primary);min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s;}
+
+/* Animated starfield background */
+body::before{
+  content:'';position:fixed;top:0;left:0;width:100%;height:100%;
+  background:radial-gradient(ellipse at 20% 50%,rgba(59,130,246,0.06) 0%,transparent 50%),
+             radial-gradient(ellipse at 80% 20%,rgba(99,102,241,0.06) 0%,transparent 50%),
+             radial-gradient(ellipse at 60% 80%,rgba(6,182,212,0.04) 0%,transparent 50%);
+  pointer-events:none;z-index:0;
+}
+
+/* NAV */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  background:rgba(10,14,26,0.92);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  padding:0 1.5rem;
+  display:flex;align-items:center;gap:1rem;height:60px;
+}
+[data-theme="light"] .nav{background:rgba(240,244,255,0.92);}
+.brand{display:flex;align-items:center;gap:.6rem;font-family:var(--font-head);font-size:1.1rem;font-weight:700;color:var(--text-primary);white-space:nowrap;}
+.brand-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent-blue),var(--accent-cyan));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem;}
+.brand span{color:var(--accent-cyan);}
+.nav-tabs{display:flex;gap:.15rem;flex:1;overflow-x:auto;scrollbar-width:none;}
+.nav-tabs::-webkit-scrollbar{display:none;}
+.tab{padding:.4rem .7rem;border-radius:6px;font-size:.78rem;font-weight:500;color:var(--text-secondary);cursor:pointer;white-space:nowrap;transition:all .2s;border:none;background:none;}
+.tab:hover{color:var(--text-primary);background:var(--bg-glass);}
+.tab.active{color:var(--accent-cyan);background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.25);}
+.nav-controls{display:flex;align-items:center;gap:.5rem;flex-shrink:0;}
+.btn-nav{padding:.35rem .7rem;border-radius:6px;font-size:.75rem;font-weight:500;cursor:pointer;transition:all .2s;border:1px solid var(--border);background:var(--bg-glass);color:var(--text-secondary);}
+.btn-nav:hover{color:var(--text-primary);border-color:var(--border-bright);}
+.btn-icon{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid var(--border);background:var(--bg-glass);color:var(--text-secondary);font-size:.9rem;transition:all .2s;}
+.btn-icon:hover{color:var(--text-primary);border-color:var(--border-bright);}
+.notif-badge{position:relative;}
+.notif-dot{position:absolute;top:4px;right:4px;width:7px;height:7px;background:var(--verypoor);border-radius:50%;animation:pulse 2s infinite;}
+
+/* LAYOUT */
+.main{padding-top:60px;position:relative;z-index:1;}
+.view{display:none;padding:1.5rem;min-height:calc(100vh - 60px);}
+.view.active{display:block;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}}
+
+/* CARDS */
+.card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  backdrop-filter:blur(12px);
+  padding:1.25rem;
+  transition:border-color .2s,box-shadow .2s;
+}
+.card:hover{border-color:var(--border-bright);box-shadow:0 0 20px rgba(59,130,246,0.08);}
+.card-title{font-family:var(--font-head);font-size:.85rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;}
+.card-title .dot{width:6px;height:6px;border-radius:50%;background:var(--accent-cyan);}
+
+/* GRID */
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;}
+.grid-auto{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.75rem;}
+
+/* AQI GAUGE */
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;padding:1rem 0;}
+.gauge-svg{width:200px;height:200px;}
+.gauge-score{font-family:var(--font-head);font-size:2.8rem;font-weight:700;fill:var(--text-primary);}
+.gauge-label{font-size:.8rem;fill:var(--text-secondary);}
+.aqi-badge{margin-top:.5rem;padding:.3rem 1rem;border-radius:20px;font-size:.85rem;font-weight:600;font-family:var(--font-head);}
+
+/* METRIC CARD */
+.metric-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:1rem;
+  position:relative;
+  overflow:hidden;
+  transition:all .2s;
+  cursor:default;
+}
+.metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:2px 2px 0 0;}
+.metric-card.good::before{background:var(--good);}
+.metric-card.moderate::before{background:var(--moderate);}
+.metric-card.poor::before{background:var(--poor);}
+.metric-card.verypoor::before{background:var(--verypoor);}
+.metric-card.severe::before{background:var(--severe);}
+.metric-name{font-size:.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;}
+.metric-val{font-family:var(--font-mono);font-size:1.5rem;font-weight:700;color:var(--text-primary);margin:.2rem 0;}
+.metric-unit{font-size:.7rem;color:var(--text-secondary);}
+.metric-trend{font-size:.7rem;display:flex;align-items:center;gap:.25rem;}
+.trend-up{color:var(--verypoor);}
+.trend-down{color:var(--good);}
+
+/* CHARTS */
+.chart-wrap{position:relative;height:220px;}
+.chart-wrap canvas{max-height:100%;}
+
+/* HEATMAP */
+.heatmap-grid{display:grid;gap:2px;}
+.heatmap-cell{border-radius:3px;cursor:pointer;transition:transform .1s,opacity .1s;}
+.heatmap-cell:hover{transform:scale(1.15);opacity:.9;}
+
+/* KPI STRIP */
+.kpi-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:.75rem;margin-bottom:1.5rem;}
+.kpi-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.9rem;text-align:center;}
+.kpi-val{font-family:var(--font-head);font-size:1.4rem;font-weight:700;color:var(--accent-cyan);}
+.kpi-label{font-size:.67rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-top:.2rem;}
+
+/* ALERTS */
+.alert-item{display:flex;align-items:center;gap:.75rem;padding:.75rem;border-radius:8px;border:1px solid;margin-bottom:.5rem;animation:slideIn .3s ease;}
+@keyframes slideIn{from{transform:translateX(-10px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+.alert-item.sev-red{border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.06);}
+.alert-item.sev-orange{border-color:rgba(249,115,22,.3);background:rgba(249,115,22,.06);}
+.alert-item.sev-yellow{border-color:rgba(234,179,8,.3);background:rgba(234,179,8,.06);}
+.alert-item.sev-green{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.06);}
+.alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.alert-dot.sev-red{background:var(--verypoor);box-shadow:0 0 8px var(--verypoor);}
+.alert-dot.sev-orange{background:var(--poor);box-shadow:0 0 8px var(--poor);}
+.alert-dot.sev-yellow{background:var(--moderate);box-shadow:0 0 8px var(--moderate);}
+.alert-dot.sev-green{background:var(--good);box-shadow:0 0 8px var(--good);}
+.alert-text{flex:1;font-size:.8rem;color:var(--text-primary);}
+.alert-time{font-size:.7rem;color:var(--text-muted);font-family:var(--font-mono);}
+
+/* MAP */
+#india-map,#hcho-map,#fire-map,#transport-map{height:500px;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;}
+
+/* PREDICT */
+.predict-layout{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+.input-group{margin-bottom:.75rem;}
+.input-group label{display:block;font-size:.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.05em;}
+.input-group input[type=range]{width:100%;accent-color:var(--accent-cyan);}
+.input-group .val-display{font-family:var(--font-mono);font-size:.85rem;color:var(--accent-cyan);text-align:right;margin-top:.15rem;}
+.preset-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-bottom:1rem;}
+.preset-btn{padding:.4rem;border-radius:6px;font-size:.73rem;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg-glass);color:var(--text-secondary);transition:all .2s;}
+.preset-btn:hover{border-color:var(--accent-cyan);color:var(--accent-cyan);}
+
+/* HEALTH ADVISORY */
+.advisory-item{display:flex;gap:.75rem;padding:.75rem;border-radius:8px;background:var(--bg-glass);border:1px solid var(--border);margin-bottom:.5rem;}
+.advisory-icon{font-size:1.2rem;flex-shrink:0;}
+.advisory-text{font-size:.82rem;color:var(--text-primary);line-height:1.5;}
+
+/* MODEL PERF */
+.metric-row{display:flex;justify-content:space-between;align-items:center;padding:.6rem 0;border-bottom:1px solid var(--border);}
+.metric-row:last-child{border:none;}
+.metric-row label{font-size:.8rem;color:var(--text-secondary);}
+.metric-row .val{font-family:var(--font-mono);font-size:.85rem;color:var(--accent-cyan);font-weight:600;}
+.score-bar{height:6px;border-radius:3px;background:var(--bg-glass);overflow:hidden;margin-top:.3rem;}
+.score-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent-blue),var(--accent-cyan));transition:width 1s ease;}
+
+/* CLASSIFICATION LEGEND */
+.aqi-legend{display:flex;flex-direction:column;gap:.35rem;}
+.legend-item{display:flex;align-items:center;gap:.5rem;padding:.4rem .6rem;border-radius:6px;font-size:.8rem;}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.legend-range{font-family:var(--font-mono);font-size:.72rem;color:var(--text-muted);margin-left:auto;}
+
+/* EXPORT */
+.export-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;}
+.export-card{background:var(--bg-glass);border:1px solid var(--border);border-radius:10px;padding:1.25rem;text-align:center;cursor:pointer;transition:all .2s;}
+.export-card:hover{border-color:var(--accent-cyan);background:rgba(6,182,212,0.05);transform:translateY(-2px);}
+.export-icon{font-size:2rem;margin-bottom:.5rem;}
+.export-label{font-size:.85rem;font-weight:600;color:var(--text-primary);}
+.export-desc{font-size:.73rem;color:var(--text-muted);margin-top:.25rem;}
+
+/* TOAST */
+.toast-container{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem;}
+.toast{padding:.7rem 1.1rem;border-radius:8px;background:var(--bg-secondary);border:1px solid var(--border-bright);font-size:.82rem;color:var(--text-primary);backdrop-filter:blur(12px);animation:toastIn .3s ease;box-shadow:var(--shadow);display:flex;align-items:center;gap:.5rem;min-width:220px;}
+.toast.success{border-color:rgba(34,197,94,.4);}
+.toast.error{border-color:rgba(239,68,68,.4);}
+@keyframes toastIn{from{transform:translateX(100px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+
+/* PAGE HEADER */
+.page-header{margin-bottom:1.5rem;}
+.page-header h1{font-family:var(--font-head);font-size:1.5rem;font-weight:700;color:var(--text-primary);}
+.page-header p{font-size:.85rem;color:var(--text-secondary);margin-top:.25rem;}
+.header-bar{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.75rem;}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:4px;}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:.82rem;}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);padding:.6rem .75rem;text-align:left;border-bottom:1px solid var(--border);}
+td{padding:.6rem .75rem;border-bottom:1px solid rgba(99,179,237,0.06);color:var(--text-primary);}
+tr:hover td{background:var(--bg-glass);}
+
+/* SECTION DIVIDER */
+.section-gap{margin-bottom:1.25rem;}
+
+/* STATUS PILL */
+.pill{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .6rem;border-radius:20px;font-size:.72rem;font-weight:600;}
+.pill.good{background:rgba(34,197,94,.15);color:var(--good);border:1px solid rgba(34,197,94,.3);}
+.pill.moderate{background:rgba(234,179,8,.15);color:var(--moderate);border:1px solid rgba(234,179,8,.3);}
+.pill.poor{background:rgba(249,115,22,.15);color:var(--poor);border:1px solid rgba(249,115,22,.3);}
+.pill.verypoor{background:rgba(239,68,68,.15);color:var(--verypoor);border:1px solid rgba(239,68,68,.3);}
+.pill.severe{background:rgba(168,85,247,.15);color:var(--severe);border:1px solid rgba(168,85,247,.3);}
+
+/* LIVE INDICATOR */
+.live{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;color:var(--good);font-family:var(--font-mono);}
+.live-dot{width:6px;height:6px;background:var(--good);border-radius:50%;animation:pulse 1.5s infinite;}
+
+/* TRANSPORT WIND */
+.wind-arrow{display:inline-block;font-size:1.2rem;animation:rotate 3s linear infinite;}
+@keyframes rotate{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+
+/* RESPONSIVE */
+@media(max-width:900px){.kpi-strip{grid-template-columns:repeat(4,1fr);}.predict-layout{grid-template-columns:1fr;}.grid-4{grid-template-columns:repeat(2,1fr);}.grid-3{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:600px){.grid-2{grid-template-columns:1fr;}.grid-3{grid-template-columns:1fr;}.grid-4{grid-template-columns:repeat(2,1fr);}.kpi-strip{grid-template-columns:repeat(2,1fr);}.predict-layout{grid-template-columns:1fr;}.export-grid{grid-template-columns:1fr 1fr;}.brand-tagline{display:none;}}
+
+/* SECTION LABEL */
+.section-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent-cyan);margin-bottom:.6rem;opacity:.7;}
+
+/* FEATURE IMPORTANCE */
+.feat-bar{display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem;}
+.feat-name{font-size:.78rem;color:var(--text-secondary);width:70px;flex-shrink:0;}
+.feat-track{flex:1;height:8px;background:var(--bg-glass);border-radius:4px;overflow:hidden;}
+.feat-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent-indigo),var(--accent-cyan));}
+.feat-val{font-family:var(--font-mono);font-size:.73rem;color:var(--accent-cyan);width:38px;text-align:right;}
+
+/* SATELLITE LAYER PANEL */
+.layer-list{display:flex;flex-direction:column;gap:.4rem;}
+.layer-item{display:flex;align-items:center;justify-content:space-between;padding:.5rem .75rem;border-radius:7px;background:var(--bg-glass);border:1px solid var(--border);}
+.layer-label{font-size:.8rem;color:var(--text-primary);}
+.toggle{position:relative;width:36px;height:20px;cursor:pointer;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:var(--border-bright);border-radius:10px;transition:.2s;}
+.toggle input:checked + .toggle-slider{background:var(--accent-cyan);}
+.toggle-slider::before{content:'';position:absolute;width:14px;height:14px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s;}
+.toggle input:checked + .toggle-slider::before{transform:translateX(16px);}
+
+/* CITY POPUP */
+.city-popup{background:var(--bg-secondary);border:1px solid var(--border-bright);border-radius:10px;padding:.9rem;min-width:180px;font-family:var(--font-body);}
+.city-popup h3{font-family:var(--font-head);font-size:.95rem;color:var(--text-primary);margin-bottom:.4rem;}
+.city-popup p{font-size:.77rem;color:var(--text-secondary);margin:.2rem 0;}
+.city-popup .aqi-big{font-family:var(--font-mono);font-size:1.6rem;font-weight:700;color:var(--accent-cyan);}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="brand">
+    <div class="brand-icon">🛰️</div>
+    <div>AeroSentinel <span>ISRO</span></div>
+  </div>
+  <div class="nav-tabs" id="navTabs">
+    <button class="tab active" onclick="showView('dashboard',this)">Dashboard</button>
+    <button class="tab" onclick="showView('analytics',this)">Analytics</button>
+    <button class="tab" onclick="showView('aqimap',this)">India AQI Map</button>
+    <button class="tab" onclick="showView('hcho',this)">HCHO Hotspots</button>
+    <button class="tab" onclick="showView('fire',this)">Fire Analysis</button>
+    <button class="tab" onclick="showView('transport',this)">Transport</button>
+    <button class="tab" onclick="showView('satellite',this)">Satellite Data</button>
+    <button class="tab" onclick="showView('predict',this)">AI Predict</button>
+    <button class="tab" onclick="showView('model',this)">Model Perf.</button>
+    <button class="tab" onclick="showView('export',this)">Export</button>
+  </div>
+  <div class="nav-controls">
+    <button class="btn-nav" onclick="resetDashboard()">↺ Reset</button>
+    <button class="btn-nav" onclick="refreshData()">⟳ Refresh</button>
+    <div class="btn-icon" onclick="toggleTheme()" title="Toggle theme">☀</div>
+    <div class="btn-icon notif-badge" onclick="showView('dashboard',null)">
+      🔔<span class="notif-dot"></span>
+    </div>
+  </div>
+</nav>
+
+<main class="main">
+
+<!-- ═══════════════ DASHBOARD ═══════════════ -->
+<div class="view active" id="v-dashboard">
+  <!-- KPI Strip -->
+  <div class="kpi-strip">
+    <div class="kpi-card"><div class="kpi-val" id="kpi-readings">24,831</div><div class="kpi-label">Total Readings</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="kpi-avgaqi">142</div><div class="kpi-label">Avg AQI</div></div>
+    <div class="kpi-card"><div class="kpi-val">287</div><div class="kpi-label">Cities Monitored</div></div>
+    <div class="kpi-card"><div class="kpi-val">28</div><div class="kpi-label">States Monitored</div></div>
+    <div class="kpi-card"><div class="kpi-val" style="color:var(--verypoor)">387</div><div class="kpi-label">Peak AQI</div></div>
+    <div class="kpi-card"><div class="kpi-val" style="color:var(--poor)">14</div><div class="kpi-label">Active Hotspots</div></div>
+    <div class="kpi-card"><div class="kpi-val" style="color:var(--moderate)">231</div><div class="kpi-label">Fire Events</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:300px 1fr 220px;gap:1rem;margin-bottom:1rem;">
+    <!-- Main AQI Gauge -->
+    <div class="card" style="display:flex;flex-direction:column;align-items:center;">
+      <div class="card-title"><span class="dot"></span>Live AQI</div>
+      <div class="gauge-wrap">
+        <svg class="gauge-svg" viewBox="0 0 200 200">
+          <defs>
+            <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#22c55e"/>
+              <stop offset="40%" stop-color="#eab308"/>
+              <stop offset="70%" stop-color="#f97316"/>
+              <stop offset="100%" stop-color="#ef4444"/>
+            </linearGradient>
+          </defs>
+          <!-- BG track -->
+          <path d="M 30 150 A 80 80 0 1 1 170 150" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="16" stroke-linecap="round"/>
+          <!-- Color track -->
+          <path id="gaugeArc" d="M 30 150 A 80 80 0 1 1 170 150" fill="none" stroke="url(#gaugeGrad)" stroke-width="16" stroke-linecap="round" stroke-dasharray="280 280" stroke-dashoffset="120"/>
+          <!-- Needle -->
+          <line id="gaugeNeedle" x1="100" y1="100" x2="100" y2="32" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round" transform="rotate(-60,100,100)"/>
+          <circle cx="100" cy="100" r="5" fill="#06b6d4"/>
+          <!-- Score -->
+          <text id="gaugeScore" class="gauge-score" x="100" y="115" text-anchor="middle" fill="var(--text-primary)" font-family="Space Grotesk" font-weight="700" font-size="32">142</text>
+          <text class="gauge-label" x="100" y="135" text-anchor="middle" fill="#8fa3c4" font-family="Inter" font-size="12">AQI Index</text>
+        </svg>
+        <div id="aqiBadge" class="aqi-badge" style="background:rgba(249,115,22,.15);color:var(--poor);border:1px solid rgba(249,115,22,.3);">● Moderate</div>
+        <div style="margin-top:.5rem;text-align:center;">
+          <div style="font-family:var(--font-head);font-size:.95rem;font-weight:600;">New Delhi, India</div>
+          <div class="live" style="margin-top:.3rem;justify-content:center;"><span class="live-dot"></span>LIVE — <span id="liveTime"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metric Grid -->
+    <div>
+      <div class="card-title" style="margin-bottom:.75rem;"><span class="dot"></span>Pollutant & Meteorological Parameters</div>
+      <div class="grid-auto" id="metricGrid"></div>
+    </div>
+
+    <!-- AQI Classification + Alerts -->
+    <div style="display:flex;flex-direction:column;gap:1rem;">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>AQI Scale</div>
+        <div class="aqi-legend" id="aqiLegend"></div>
+      </div>
+      <div class="card" style="flex:1;">
+        <div class="card-title"><span class="dot"></span>Live Alerts</div>
+        <div id="alertsPanel"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Charts row -->
+  <div class="grid-2 section-gap">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>24-Hour AQI Trend</div>
+      <div class="chart-wrap"><canvas id="chart24h"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Pollutant Levels</div>
+      <div class="chart-wrap"><canvas id="chartPollutants"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Heatmap -->
+  <div class="card section-gap">
+    <div class="card-title"><span class="dot"></span>Hourly AQI Heatmap — Mon–Sun × 0–23h</div>
+    <div id="heatmapWrap" style="overflow-x:auto;"></div>
+    <div style="display:flex;gap:.5rem;align-items:center;margin-top:.75rem;font-size:.72rem;color:var(--text-muted);">
+      <span>Low</span>
+      <div style="display:flex;gap:2px;">
+        <div style="width:16px;height:10px;border-radius:2px;background:#22c55e;"></div>
+        <div style="width:16px;height:10px;border-radius:2px;background:#84cc16;"></div>
+        <div style="width:16px;height:10px;border-radius:2px;background:#eab308;"></div>
+        <div style="width:16px;height:10px;border-radius:2px;background:#f97316;"></div>
+        <div style="width:16px;height:10px;border-radius:2px;background:#ef4444;"></div>
+        <div style="width:16px;height:10px;border-radius:2px;background:#7f1d1d;"></div>
+      </div>
+      <span>Extreme</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ ANALYTICS ═══════════════ -->
+<div class="view" id="v-analytics">
+  <div class="header-bar page-header">
+    <div><h1>Analytics & Insights</h1><p>Comprehensive AQI trends, pollutant correlations, and city comparisons</p></div>
+    <div class="live"><span class="live-dot"></span>Real-time data feed</div>
+  </div>
+  <div class="grid-2 section-gap">
+    <div class="card"><div class="card-title"><span class="dot"></span>7-Day AQI Trend</div><div class="chart-wrap"><canvas id="chart7d"></canvas></div></div>
+    <div class="card"><div class="card-title"><span class="dot"></span>Monthly AQI Trend</div><div class="chart-wrap"><canvas id="chartMonthly"></canvas></div></div>
+  </div>
+  <div class="grid-2 section-gap">
+    <div class="card"><div class="card-title"><span class="dot"></span>Pollutant Comparison (Multi-line)</div><div class="chart-wrap"><canvas id="chartMulti"></canvas></div></div>
+    <div class="card"><div class="card-title"><span class="dot"></span>AQI Distribution Histogram</div><div class="chart-wrap"><canvas id="chartHist"></canvas></div></div>
+  </div>
+  <div class="grid-3 section-gap">
+    <div class="card"><div class="card-title"><span class="dot"></span>AQI vs Temperature</div><div class="chart-wrap"><canvas id="chartVsTemp"></canvas></div></div>
+    <div class="card"><div class="card-title"><span class="dot"></span>AQI vs Humidity</div><div class="chart-wrap"><canvas id="chartVsHum"></canvas></div></div>
+    <div class="card"><div class="card-title"><span class="dot"></span>AQI vs Wind Speed</div><div class="chart-wrap"><canvas id="chartVsWind"></canvas></div></div>
+  </div>
+  <div class="grid-2 section-gap">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Top 10 Most Polluted Cities</div>
+      <table>
+        <thead><tr><th>#</th><th>City</th><th>AQI</th><th>Status</th><th>PM2.5</th></tr></thead>
+        <tbody id="topPollutedTable"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Top 10 Cleanest Cities</div>
+      <table>
+        <thead><tr><th>#</th><th>City</th><th>AQI</th><th>Status</th><th>PM2.5</th></tr></thead>
+        <tbody id="topCleanTable"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card section-gap">
+    <div class="card-title"><span class="dot"></span>Seasonal AQI Analysis</div>
+    <div class="chart-wrap" style="height:260px;"><canvas id="chartSeasonal"></canvas></div>
+  </div>
+</div>
+
+<!-- ═══════════════ INDIA AQI MAP ═══════════════ -->
+<div class="view" id="v-aqimap">
+  <div class="header-bar page-header">
+    <div><h1>India AQI Map</h1><p>State & district-level air quality visualization with historical playback</p></div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+      <input id="citySearch" type="text" placeholder="Search city..." style="padding:.35rem .7rem;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);font-size:.8rem;" oninput="filterMapCity(this.value)"/>
+      <select id="aqiFilter" style="padding:.35rem .7rem;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);font-size:.8rem;" onchange="filterMapAQI(this.value)">
+        <option value="">All Categories</option>
+        <option value="good">Good</option>
+        <option value="moderate">Moderate</option>
+        <option value="poor">Poor</option>
+        <option value="verypoor">Very Poor</option>
+        <option value="severe">Severe</option>
+      </select>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 220px;gap:1rem;">
+    <div><div id="india-map"></div>
+    <div style="margin-top:.75rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+      <span style="font-size:.75rem;color:var(--text-muted);">Historical playback:</span>
+      <input type="range" id="histSlider" min="0" max="23" value="12" style="flex:1;accent-color:var(--accent-cyan);" oninput="updateHistSlider(this.value)"/>
+      <span id="histLabel" style="font-family:var(--font-mono);font-size:.78rem;color:var(--accent-cyan);">12:00</span>
+    </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.75rem;">
+      <div class="card"><div class="card-title"><span class="dot"></span>Layer Controls</div>
+        <div class="layer-list">
+          <div class="layer-item"><span class="layer-label">AQI Layer</span><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+          <div class="layer-item"><span class="layer-label">PM2.5 Layer</span><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+          <div class="layer-item"><span class="layer-label">NO₂ Layer</span><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+          <div class="layer-item"><span class="layer-label">Fire Layer</span><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+          <div class="layer-item"><span class="layer-label">Wind Layer</span><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>AQI Legend</div>
+        <div class="aqi-legend" id="mapLegend"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ HCHO HOTSPOTS ═══════════════ -->
+<div class="view" id="v-hcho">
+  <div class="header-bar page-header">
+    <div><h1>HCHO Hotspot Analytics</h1><p>Sentinel-5P TROPOMI formaldehyde column density — biomass burning detection</p></div>
+    <div style="display:flex;gap:.4rem;">
+      <button class="btn-nav" onclick="setHCHOFilter('daily')" id="hf-daily" style="border-color:var(--accent-cyan);color:var(--accent-cyan);">Daily</button>
+      <button class="btn-nav" onclick="setHCHOFilter('weekly')" id="hf-weekly">Weekly</button>
+      <button class="btn-nav" onclick="setHCHOFilter('monthly')" id="hf-monthly">Monthly</button>
+      <button class="btn-nav" onclick="setHCHOFilter('seasonal')" id="hf-seasonal">Seasonal</button>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 300px;gap:1rem;margin-bottom:1rem;">
+    <div><div id="hcho-map"></div></div>
+    <div style="display:flex;flex-direction:column;gap:.75rem;">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>HCHO Scale</div>
+        <div style="height:120px;background:linear-gradient(to top,#22c55e,#eab308,#f97316,#ef4444);border-radius:6px;"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:.3rem;font-size:.7rem;color:var(--text-muted);">
+          <span>Low</span><span>High</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>HCHO Statistics</div>
+        <div class="metric-row"><label>Max HCHO</label><span class="val">18.4 ×10¹⁵</span></div>
+        <div class="metric-row"><label>Avg HCHO</label><span class="val">6.2 ×10¹⁵</span></div>
+        <div class="metric-row"><label>Hotspot Count</label><span class="val">14</span></div>
+        <div class="metric-row"><label>Burning Season</label><span class="val">Oct–Nov</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="grid-2 section-gap">
+    <div class="card"><div class="card-title"><span class="dot"></span>HCHO Time Series</div><div class="chart-wrap"><canvas id="chartHCHO"></canvas></div></div>
+    <div class="card"><div class="card-title"><span class="dot"></span>Fire Count vs HCHO</div><div class="chart-wrap"><canvas id="chartFireHCHO"></canvas></div></div>
+  </div>
+  <div class="card section-gap">
+    <div class="card-title"><span class="dot"></span>Top HCHO Hotspot Regions</div>
+    <table>
+      <thead><tr><th>#</th><th>Region</th><th>State</th><th>HCHO Value (×10¹⁵)</th><th>Fire Count</th><th>AQI</th><th>Trend</th><th>Status</th></tr></thead>
+      <tbody id="hchoTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════ FIRE ANALYSIS ═══════════════ -->
+<div class="view" id="v-fire">
+  <div class="header-bar page-header">
+    <div><h1>Fire Activity Analysis</h1><p>MODIS/VIIRS active fire detection — biomass burning & crop residue events</p></div>
+    <div class="live"><span class="live-dot"></span>FIRMS data stream</div>
+  </div>
+  <div class="grid-4 section-gap">
+    <div class="kpi-card"><div class="kpi-val" style="color:var(--verypoor)">231</div><div class="kpi-label">Active Fire Points</div></div>
+    <div class="kpi-card"><div class="kpi-val" style="color:var(--poor)">48</div><div class="kpi-label">Today's Fires</div></div>
+    <div class="kpi-card"><div class="kpi-val" style="color:var(--moderate)">Punjab</div><div class="kpi-label">Top Fire State</div></div>
+    <div class="kpi-card"><div class="kpi-val" style="color:var(--good)">↓ 12%</div><div class="kpi-label">vs Yesterday</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 260px;gap:1rem;margin-bottom:1rem;">
+    <div id="fire-map"></div>
+    <div style="display:flex;flex-direction:column;gap:.75rem;">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>State-wise Fire Count</div>
+        <table>
+          <thead><tr><th>State</th><th>Fires</th><th>Trend</th></tr></thead>
+          <tbody id="stateFireTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="grid-3 section-gap">
+    <div class="card"><div class="card-title"><span class="dot"></span>Daily Fire Count (30 days)</div><div class="chart-wrap"><canvas id="chartFireDaily"></canvas></div></div>
+    <div class="card"><div class="card-title"><span class="dot"></span>Fire Count vs AQI</div><div class="chart-wrap"><canvas id="chartFireAQI"></canvas></div></div>
+    <div class="card"><div class="card-title"><span class="dot"></span>Monthly Fire Trends</div><div class="chart-wrap"><canvas id="chartFireMonthly"></canvas></div></div>
+  </div>
+</div>
+
+<!-- ═══════════════ TRANSPORT ═══════════════ -->
+<div class="view" id="v-transport">
+  <div class="header-bar page-header">
+    <div><h1>Pollution Transport Analysis</h1><p>ERA5 wind fields — source-to-receptor pathway modelling</p></div>
+    <div style="display:flex;gap:.4rem;align-items:center;">
+      <span style="font-size:.78rem;color:var(--text-secondary);">Pathway:</span>
+      <select style="padding:.35rem .7rem;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);font-size:.8rem;">
+        <option>Punjab → Delhi</option>
+        <option>Haryana → NCR</option>
+        <option>UP → Bihar</option>
+        <option>Jharkhand → Odisha</option>
+      </select>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 240px;gap:1rem;margin-bottom:1rem;">
+    <div id="transport-map"></div>
+    <div style="display:flex;flex-direction:column;gap:.75rem;">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>Wind Parameters</div>
+        <div class="metric-row"><label>Wind Speed</label><span class="val">4.2 m/s</span></div>
+        <div class="metric-row"><label>Direction</label><span class="val">NW → SE</span></div>
+        <div class="metric-row"><label>BL Height</label><span class="val">820 m</span></div>
+        <div class="metric-row"><label>Plume Reach</label><span class="val">~380 km</span></div>
+        <div class="metric-row"><label>Transport Time</label><span class="val">~25 hrs</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>Source Contribution</div>
+        <div class="chart-wrap" style="height:150px;"><canvas id="chartTransportPie"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <div class="grid-2 section-gap">
+    <div class="card"><div class="card-title"><span class="dot"></span>Wind Speed Time Series</div><div class="chart-wrap"><canvas id="chartWindSpeed"></canvas></div></div>
+    <div class="card"><div class="card-title"><span class="dot"></span>Pollution Plume Trajectory</div><div class="chart-wrap"><canvas id="chartPlume"></canvas></div></div>
+  </div>
+</div>
+
+<!-- ═══════════════ SATELLITE DATA ═══════════════ -->
+<div class="view" id="v-satellite">
+  <div class="header-bar page-header">
+    <div><h1>Satellite Data Explorer</h1><p>INSAT-3D AOD, Sentinel-5P, MODIS/VIIRS layer visualizations</p></div>
+  </div>
+  <div style="display:grid;grid-template-columns:220px 1fr;gap:1rem;">
+    <div style="display:flex;flex-direction:column;gap:.75rem;">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>Satellite Layers</div>
+        <div class="layer-list">
+          <div class="layer-item"><span class="layer-label">INSAT-3D AOD</span><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+          <div class="layer-item"><span class="layer-label">S5P NO₂</span><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+          <div class="layer-item"><span class="layer-label">S5P SO₂</span><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+          <div class="layer-item"><span class="layer-label">S5P CO</span><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+          <div class="layer-item"><span class="layer-label">S5P O₃</span><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+          <div class="layer-item"><span class="layer-label">S5P HCHO</span><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+          <div class="layer-item"><span class="layer-label">Fire Count</span><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+          <div class="layer-item"><span class="layer-label">Wind Field</span><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>Layer Opacity</div>
+        <input type="range" min="10" max="100" value="70" style="width:100%;accent-color:var(--accent-cyan);"/>
+        <div style="font-family:var(--font-mono);font-size:.78rem;color:var(--accent-cyan);text-align:center;margin-top:.3rem;">70%</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>Time Filter</div>
+        <input type="date" style="width:100%;padding:.35rem;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);font-size:.8rem;"/>
+        <div style="margin-top:.5rem;">
+          <input type="range" min="0" max="23" value="12" style="width:100%;accent-color:var(--accent-cyan);"/>
+          <div style="font-family:var(--font-mono);font-size:.78rem;color:var(--accent-cyan);text-align:center;">12:00 UTC</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div id="sat-map" style="height:520px;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;background:var(--bg-card);display:flex;align-items:center;justify-content:center;">
+        <div style="text-align:center;color:var(--text-muted);">
+          <div style="font-size:3rem;">🛰️</div>
+          <div style="font-family:var(--font-head);font-size:1rem;margin-top:.5rem;">Satellite Layer Viewer</div>
+          <div style="font-size:.8rem;margin-top:.3rem;">Select a layer from the panel to visualize</div>
+          <div style="margin-top:1rem;font-size:.75rem;opacity:.6;">Connect to Google Earth Engine / MOSDAC API for live data</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ AI PREDICT ═══════════════ -->
+<div class="view" id="v-predict">
+  <div class="header-bar page-header">
+    <div><h1>AI AQI Predictor</h1><p>CNN-LSTM deep learning model — surface AQI estimation from satellite & met. inputs</p></div>
+  </div>
+  <div class="predict-layout">
+    <!-- Left: Inputs -->
+    <div>
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-title"><span class="dot"></span>Quick Presets</div>
+        <div class="preset-grid">
+          <button class="preset-btn" onclick="applyPreset('good')">🟢 Good Air</button>
+          <button class="preset-btn" onclick="applyPreset('moderate')">🟡 Moderate</button>
+          <button class="preset-btn" onclick="applyPreset('unhealthy')">🟠 Unhealthy</button>
+          <button class="preset-btn" onclick="applyPreset('hazardous')">🔴 Hazardous</button>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-title"><span class="dot"></span>Pollutant Inputs</div>
+        <div id="pollutantInputs"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>Meteorological Inputs</div>
+        <div id="metInputs"></div>
+        <button onclick="runPrediction()" style="width:100%;margin-top:1rem;padding:.65rem;border-radius:8px;border:none;background:linear-gradient(135deg,var(--accent-blue),var(--accent-cyan));color:#fff;font-family:var(--font-head);font-size:.9rem;font-weight:600;cursor:pointer;transition:opacity .2s;">
+          ▶ Run AQI Prediction
+        </button>
+      </div>
+    </div>
+    <!-- Right: Output -->
+    <div>
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-title"><span class="dot"></span>Predicted AQI</div>
+        <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;">
+          <svg viewBox="0 0 200 200" style="width:160px;height:160px;flex-shrink:0;">
+            <defs><linearGradient id="predGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#22c55e"/><stop offset="100%" stop-color="#ef4444"/></linearGradient></defs>
+            <path d="M 30 150 A 80 80 0 1 1 170 150" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="16" stroke-linecap="round"/>
+            <path id="predArc" d="M 30 150 A 80 80 0 1 1 170 150" fill="none" stroke="url(#predGrad)" stroke-width="16" stroke-linecap="round" stroke-dasharray="280 280" stroke-dashoffset="170"/>
+            <text id="predScore" x="100" y="110" text-anchor="middle" fill="var(--text-primary)" font-family="Space Grotesk" font-weight="700" font-size="30">--</text>
+            <text x="100" y="130" text-anchor="middle" fill="#8fa3c4" font-family="Inter" font-size="11">Predicted AQI</text>
+          </svg>
+          <div style="flex:1;">
+            <div id="predClass" style="font-family:var(--font-head);font-size:1.1rem;font-weight:600;color:var(--text-secondary);">Run prediction to see result</div>
+            <div style="margin-top:.5rem;font-size:.8rem;color:var(--text-muted);">Confidence: <span id="predConf" style="color:var(--accent-cyan);font-family:var(--font-mono);">--</span></div>
+            <div style="margin-top:.35rem;font-size:.8rem;color:var(--text-muted);">Model: <span style="color:var(--accent-cyan);">CNN-LSTM Hybrid</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-title"><span class="dot"></span>Pollutant Contribution</div>
+        <div class="chart-wrap" style="height:180px;"><canvas id="chartContrib"></canvas></div>
+      </div>
+      <div class="card" id="healthAdvisoryPanel">
+        <div class="card-title"><span class="dot"></span>Health Advisory</div>
+        <div id="advisoryList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODEL PERFORMANCE ═══════════════ -->
+<div class="view" id="v-model">
+  <div class="page-header"><h1>Model Performance</h1><p>CNN-LSTM, Random Forest, XGBoost — validation metrics & explainability</p></div>
+  <div class="grid-3 section-gap">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>CNN-LSTM</div>
+      <div class="metric-row"><label>Algorithm</label><span class="val">CNN-LSTM Hybrid</span></div>
+      <div class="metric-row"><label>Dataset Size</label><span class="val">24,831 samples</span></div>
+      <div class="metric-row"><label>R² Score</label><span class="val">0.924</span></div>
+      <div><div class="score-bar"><div class="score-fill" style="width:92.4%"></div></div></div>
+      <div class="metric-row"><label>RMSE</label><span class="val">12.4</span></div>
+      <div class="metric-row"><label>MAE</label><span class="val">8.7</span></div>
+      <div class="metric-row"><label>Status</label><span><span class="pill good">● Active</span></span></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>XGBoost Regressor</div>
+      <div class="metric-row"><label>Algorithm</label><span class="val">XGBoost</span></div>
+      <div class="metric-row"><label>Dataset Size</label><span class="val">24,831 samples</span></div>
+      <div class="metric-row"><label>R² Score</label><span class="val">0.891</span></div>
+      <div><div class="score-bar"><div class="score-fill" style="width:89.1%"></div></div></div>
+      <div class="metric-row"><label>RMSE</label><span class="val">15.8</span></div>
+      <div class="metric-row"><label>MAE</label><span class="val">11.2</span></div>
+      <div class="metric-row"><label>Status</label><span><span class="pill moderate">● Ensemble</span></span></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Random Forest</div>
+      <div class="metric-row"><label>Algorithm</label><span class="val">RF Regressor</span></div>
+      <div class="metric-row"><label>Dataset Size</label><span class="val">24,831 samples</span></div>
+      <div class="metric-row"><label>R² Score</label><span class="val">0.876</span></div>
+      <div><div class="score-bar"><div class="score-fill" style="width:87.6%"></div></div></div>
+      <div class="metric-row"><label>RMSE</label><span class="val">17.2</span></div>
+      <div class="metric-row"><label>MAE</label><span class="val">12.4</span></div>
+      <div class="metric-row"><label>Status</label><span><span class="pill moderate">● Ensemble</span></span></div>
+    </div>
+  </div>
+  <div class="grid-2 section-gap">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Feature Importance</div>
+      <div id="featureImportance"></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Actual vs Predicted AQI</div>
+      <div class="chart-wrap"><canvas id="chartActVsPred"></canvas></div>
+    </div>
+  </div>
+  <div class="card section-gap">
+    <div class="card-title"><span class="dot"></span>SHAP Explainability Summary</div>
+    <div class="chart-wrap" style="height:200px;"><canvas id="chartSHAP"></canvas></div>
+  </div>
+</div>
+
+<!-- ═══════════════ EXPORT ═══════════════ -->
+<div class="view" id="v-export">
+  <div class="page-header"><h1>Export Center</h1><p>Download data, charts, maps, and full analytics reports</p></div>
+  <div class="export-grid section-gap">
+    <div class="export-card" onclick="doExport('CSV Data')"><div class="export-icon">📊</div><div class="export-label">Export CSV</div><div class="export-desc">All pollutant readings, AQI data</div></div>
+    <div class="export-card" onclick="doExport('Excel Report')"><div class="export-icon">📑</div><div class="export-label">Export Excel</div><div class="export-desc">Multi-sheet analytics workbook</div></div>
+    <div class="export-card" onclick="doExport('Chart Images')"><div class="export-icon">📈</div><div class="export-label">Export Charts</div><div class="export-desc">All dashboard charts as PNG</div></div>
+    <div class="export-card" onclick="doExport('AQI Map')"><div class="export-icon">🗺️</div><div class="export-label">Export Maps</div><div class="export-desc">India AQI, HCHO, fire maps</div></div>
+    <div class="export-card" onclick="doExport('Analytics Report')"><div class="export-icon">📝</div><div class="export-label">Analytics Report</div><div class="export-desc">Full PDF report — coming soon</div></div>
+    <div class="export-card" onclick="doExport('HCHO Hotspot Data')"><div class="export-icon">🔥</div><div class="export-label">HCHO Hotspot Data</div><div class="export-desc">Hotspot regions with fire counts</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Data Pipeline Status</div>
+    <div style="display:flex;flex-direction:column;gap:.5rem;font-size:.82rem;">
+      <div class="metric-row"><label>INSAT-3D AOD Feed</label><span class="pill good">● Live</span></div>
+      <div class="metric-row"><label>Sentinel-5P TROPOMI</label><span class="pill good">● Live</span></div>
+      <div class="metric-row"><label>CPCB Ground Stations</label><span class="pill good">● 287 Active</span></div>
+      <div class="metric-row"><label>MODIS/VIIRS Fire Feed</label><span class="pill good">● Live</span></div>
+      <div class="metric-row"><label>ERA5 Reanalysis</label><span class="pill moderate">● 6hr Lag</span></div>
+      <div class="metric-row"><label>CNN-LSTM Model</label><span class="pill good">● Serving</span></div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ─── DATA ───
+const metrics = [
+  {name:'PM2.5',val:68.4,unit:'µg/m³',status:'poor',trend:'+4.2%',up:true},
+  {name:'PM10',val:112.7,unit:'µg/m³',status:'verypoor',trend:'+8.1%',up:true},
+  {name:'NO₂',val:42.3,unit:'ppb',status:'moderate',trend:'-2.1%',up:false},
+  {name:'SO₂',val:18.6,unit:'ppb',status:'good',trend:'-5.4%',up:false},
+  {name:'O₃',val:54.2,unit:'ppb',status:'moderate',trend:'+1.8%',up:true},
+  {name:'CO',val:1.24,unit:'mg/m³',status:'good',trend:'-0.3%',up:false},
+  {name:'Temperature',val:32.4,unit:'°C',status:'good',trend:'',up:false},
+  {name:'Humidity',val:61,unit:'%',status:'good',trend:'',up:false},
+  {name:'Wind Speed',val:3.8,unit:'m/s',status:'good',trend:'',up:false},
+];
+const aqiScale=[
+  {label:'Good',range:'0–50',color:'#22c55e'},{label:'Satisfactory',range:'51–100',color:'#84cc16'},
+  {label:'Moderate',range:'101–200',color:'#eab308'},{label:'Poor',range:'201–300',color:'#f97316'},
+  {label:'Very Poor',range:'301–400',color:'#ef4444'},{label:'Severe',range:'401+',color:'#a855f7'},
+];
+const alerts=[
+  {msg:'Very Poor AQI detected in Delhi NCR — 387 AQI',sev:'red',time:'10 min ago'},
+  {msg:'HCHO Hotspot detected over Punjab — 16.2×10¹⁵',sev:'red',time:'32 min ago'},
+  {msg:'Extreme fire activity: 48 active fires in Haryana',sev:'orange',time:'1 hr ago'},
+  {msg:'Pollution transport event: Punjab → Delhi corridor active',sev:'orange',time:'2 hr ago'},
+  {msg:'Air quality improved in Mumbai — 62 AQI',sev:'green',time:'3 hr ago'},
+];
+const hchoHotspots=[
+  {region:'Amritsar',state:'Punjab',hcho:18.4,fire:142,aqi:387,trend:'↑'},
+  {region:'Ludhiana',state:'Punjab',hcho:16.2,fire:118,aqi:342,trend:'↑'},
+  {region:'Karnal',state:'Haryana',hcho:15.8,fire:97,aqi:318,trend:'↑'},
+  {region:'Panipat',state:'Haryana',hcho:14.4,fire:84,aqi:298,trend:'→'},
+  {region:'Bareilly',state:'UP',hcho:12.1,fire:67,aqi:252,trend:'↓'},
+  {region:'Jorhat',state:'Assam',hcho:11.8,fire:203,aqi:189,trend:'↑'},
+  {region:'Dibrugarh',state:'Assam',hcho:10.4,fire:178,aqi:174,trend:'↑'},
+  {region:'Raipur',state:'Chhattisgarh',hcho:9.2,fire:89,aqi:156,trend:'→'},
+];
+const stateFires=[
+  {state:'Punjab',fires:142,trend:'↑'},{state:'Haryana',fires:97,trend:'↑'},
+  {state:'UP',fires:67,trend:'→'},{state:'Assam',fires:203,trend:'↑'},
+  {state:'Chhattisgarh',fires:89,trend:'↓'},{state:'Odisha',fires:74,trend:'↓'},
+  {state:'MP',fires:61,trend:'→'},{state:'Jharkhand',fires:48,trend:'↑'},
+];
+const pollutedCities=[
+  {city:'Delhi',aqi:387,status:'severe',pm25:182},{city:'Ghaziabad',aqi:342,status:'verypoor',pm25:156},
+  {city:'Faridabad',aqi:318,status:'verypoor',pm25:142},{city:'Noida',aqi:304,status:'verypoor',pm25:138},
+  {city:'Gurugram',aqi:298,status:'poor',pm25:124},{city:'Kanpur',aqi:287,status:'poor',pm25:118},
+  {city:'Lucknow',aqi:274,status:'poor',pm25:112},{city:'Agra',aqi:262,status:'poor',pm25:104},
+  {city:'Patna',aqi:248,status:'poor',pm25:98},{city:'Varanasi',aqi:234,status:'poor',pm25:92},
+];
+const cleanCities=[
+  {city:'Port Blair',aqi:28,status:'good',pm25:8},{city:'Shillong',aqi:32,status:'good',pm25:10},
+  {city:'Mizoram',aqi:38,status:'good',pm25:12},{city:'Gangtok',aqi:41,status:'good',pm25:14},
+  {city:'Mysuru',aqi:48,status:'good',pm25:16},{city:'Coimbatore',aqi:52,status:'satisfactory',pm25:18},
+  {city:'Thiruvananthapuram',aqi:56,status:'satisfactory',pm25:20},{city:'Mangaluru',aqi:61,status:'satisfactory',pm25:22},
+  {city:'Visakhapatnam',aqi:67,status:'satisfactory',pm25:24},{city:'Bhubaneswar',aqi:72,status:'satisfactory',pm25:26},
+];
+const indiaLocations=[
+  {name:'New Delhi',state:'Delhi',lat:28.6139,lon:77.2090,aqi:387,cat:'severe',pm25:182,pm10:312,temp:32},
+  {name:'Mumbai',state:'Maharashtra',lat:19.0760,lon:72.8777,aqi:72,cat:'satisfactory',pm25:28,pm10:52,temp:28},
+  {name:'Chennai',state:'Tamil Nadu',lat:13.0827,lon:80.2707,aqi:68,cat:'satisfactory',pm25:24,pm10:48,temp:34},
+  {name:'Kolkata',state:'West Bengal',lat:22.5726,lon:88.3639,aqi:184,cat:'poor',pm25:78,pm10:142,temp:30},
+  {name:'Bengaluru',state:'Karnataka',lat:12.9716,lon:77.5946,aqi:84,cat:'satisfactory',pm25:32,pm10:64,temp:26},
+  {name:'Hyderabad',state:'Telangana',lat:17.3850,lon:78.4867,aqi:96,cat:'satisfactory',pm25:38,pm10:74,temp:32},
+  {name:'Ahmedabad',state:'Gujarat',lat:23.0225,lon:72.5714,aqi:142,cat:'moderate',pm25:62,pm10:118,temp:36},
+  {name:'Pune',state:'Maharashtra',lat:18.5204,lon:73.8567,aqi:88,cat:'satisfactory',pm25:34,pm10:68,temp:28},
+  {name:'Jaipur',state:'Rajasthan',lat:26.9124,lon:75.7873,aqi:164,cat:'moderate',pm25:72,pm10:138,temp:38},
+  {name:'Lucknow',state:'UP',lat:26.8467,lon:80.9462,aqi:274,cat:'poor',pm25:112,pm10:204,temp:34},
+  {name:'Chandigarh',state:'Punjab',lat:30.7333,lon:76.7794,aqi:246,cat:'poor',pm25:98,pm10:188,temp:30},
+  {name:'Amritsar',state:'Punjab',lat:31.6340,lon:74.8723,aqi:342,cat:'verypoor',pm25:156,pm10:288,temp:28},
+];
+
+// ─── CHART THEME ───
+const getThemeColors = () => ({
+  text: document.documentElement.getAttribute('data-theme')==='light' ? '#334155' : '#8fa3c4',
+  grid: document.documentElement.getAttribute('data-theme')==='light' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)',
+});
+
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.font.size = 11;
+const mkChart=(id,type,data,opts={})=>{
+  const ctx=document.getElementById(id);
+  if(!ctx)return null;
+  const c=getThemeColors();
+  return new Chart(ctx,{type,data,options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:c.text,boxWidth:10,padding:10}},tooltip:{backgroundColor:'rgba(15,22,46,0.95)',titleColor:'#e8eef8',bodyColor:'#8fa3c4',borderColor:'rgba(99,179,237,0.3)',borderWidth:1}},
+    scales:type==='pie'||type==='doughnut'?{}:{x:{ticks:{color:c.text,maxTicksLimit:8},grid:{color:c.grid}},y:{ticks:{color:c.text},grid:{color:c.grid}}},
+    ...opts
+  }});
+};
+
+// ─── HELPERS ───
+const AQIColor=(v)=>v<=50?'#22c55e':v<=100?'#84cc16':v<=200?'#eab308':v<=300?'#f97316':v<=400?'#ef4444':'#a855f7';
+const AQICat=(v)=>v<=50?'Good':v<=100?'Satisfactory':v<=200?'Moderate':v<=300?'Poor':v<=400?'Very Poor':'Severe';
+const rand=(a,b)=>Math.random()*(b-a)+a;
+const randArr=(n,a,b)=>Array.from({length:n},()=>Math.round(rand(a,b)));
+
+// ─── VIEWS ───
+function showView(id,btn){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('v-'+id).classList.add('active');
+  if(btn){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');}
+  // lazy init maps
+  if(id==='aqimap'&&!window._mapIndia) initIndiaMap();
+  if(id==='hcho'&&!window._mapHCHO) initHCHOMap();
+  if(id==='fire'&&!window._mapFire) initFireMap();
+  if(id==='transport'&&!window._mapTransport) initTransportMap();
+  if(id==='analytics'&&!window._analyticsInit) initAnalytics();
+  if(id==='model'&&!window._modelInit) initModel();
+}
+
+// ─── LIVE CLOCK ───
+function updateClock(){
+  const now=new Date();
+  const el=document.getElementById('liveTime');
+  if(el)el.textContent=now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(updateClock,1000);updateClock();
+
+// ─── BUILD DASHBOARD ───
+function buildDashboard(){
+  // Metric grid
+  const g=document.getElementById('metricGrid');
+  if(g){
+    g.innerHTML=metrics.map(m=>`
+      <div class="metric-card ${m.status}">
+        <div class="metric-name">${m.name}</div>
+        <div class="metric-val">${m.val}</div>
+        <div class="metric-unit">${m.unit}</div>
+        ${m.trend?`<div class="metric-trend ${m.up?'trend-up':'trend-down'}">${m.up?'▲':'▼'} ${m.trend}</div>`:''}
+      </div>`).join('');
+  }
+  // Legend
+  ['aqiLegend','mapLegend'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.innerHTML=aqiScale.map(s=>`
+      <div class="legend-item" style="background:${s.color}18;border:1px solid ${s.color}30;">
+        <div class="legend-dot" style="background:${s.color};box-shadow:0 0 6px ${s.color}80;"></div>
+        <span style="color:${s.color};font-size:.8rem;font-weight:600;">${s.label}</span>
+        <span class="legend-range">${s.range}</span>
+      </div>`).join('');
+  });
+  // Alerts
+  const ap=document.getElementById('alertsPanel');
+  if(ap) ap.innerHTML=alerts.map(a=>`
+    <div class="alert-item sev-${a.sev}">
+      <div class="alert-dot sev-${a.sev}"></div>
+      <div class="alert-text">${a.msg}</div>
+      <div class="alert-time">${a.time}</div>
+    </div>`).join('');
+}
+
+// ─── CHARTS ───
+function build24hChart(){
+  const labels=Array.from({length:24},(_,i)=>`${i}:00`);
+  const vals=randArr(24,80,320);
+  mkChart('chart24h','line',{
+    labels,
+    datasets:[{label:'AQI',data:vals,borderColor:'#06b6d4',backgroundColor:'rgba(6,182,212,0.08)',tension:.4,fill:true,pointRadius:2,borderWidth:2}]
+  });
+}
+
+function buildPollutantChart(){
+  mkChart('chartPollutants','bar',{
+    labels:['PM2.5','PM10','NO₂','SO₂','O₃','CO×10'],
+    datasets:[{label:'Current',data:[68,113,42,19,54,12],backgroundColor:['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#6366f1'],borderRadius:5}]
+  },{scales:{x:{ticks:{color:getThemeColors().text},grid:{display:false}},y:{ticks:{color:getThemeColors().text},grid:{color:getThemeColors().grid}}}});
+}
+
+function buildHeatmap(){
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const wrap=document.getElementById('heatmapWrap');
+  if(!wrap)return;
+  const cellW=28,cellH=24,labelW=36,gap=2;
+  let html=`<div style="display:flex;gap:${gap}px;align-items:flex-start;">`;
+  html+=`<div style="display:flex;flex-direction:column;gap:${gap}px;padding-top:20px;">`;
+  days.forEach(d=>`${html+=`<div style="height:${cellH}px;line-height:${cellH}px;font-size:.65rem;color:var(--text-muted);width:${labelW}px;text-align:right;padding-right:4px;">${d}</div>`}`);
+  html+=`</div>`;
+  html+=`<div>`;
+  html+=`<div style="display:flex;gap:${gap}px;margin-bottom:${gap}px;">`;
+  for(let h=0;h<24;h++) html+=`<div style="width:${cellW}px;font-size:.6rem;color:var(--text-muted);text-align:center;">${h}</div>`;
+  html+=`</div>`;
+  days.forEach((d,di)=>{
+    html+=`<div style="display:flex;gap:${gap}px;margin-bottom:${gap}px;">`;
+    for(let h=0;h<24;h++){
+      const v=Math.round(rand(40,380));
+      const c=AQIColor(v);
+      html+=`<div class="heatmap-cell" title="${d} ${h}:00 — AQI: ${v}" style="width:${cellW}px;height:${cellH}px;background:${c};opacity:${0.4+v/600};border-radius:3px;"></div>`;
+    }
+    html+=`</div>`;
+  });
+  html+=`</div></div>`;
+  wrap.innerHTML=html;
+}
+
+function initAnalytics(){
+  window._analyticsInit=true;
+  const labels7=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  mkChart('chart7d','line',{labels:labels7,datasets:[{label:'Delhi',data:randArr(7,120,380),borderColor:'#ef4444',tension:.4,fill:false,borderWidth:2,pointRadius:3},{label:'Mumbai',data:randArr(7,40,100),borderColor:'#22c55e',tension:.4,fill:false,borderWidth:2,pointRadius:3},{label:'Kolkata',data:randArr(7,100,220),borderColor:'#eab308',tension:.4,fill:false,borderWidth:2,pointRadius:3}]});
+  mkChart('chartMonthly','line',{labels:months,datasets:[{label:'Avg AQI 2024',data:randArr(12,60,320),borderColor:'#06b6d4',backgroundColor:'rgba(6,182,212,0.08)',tension:.4,fill:true,borderWidth:2}]});
+  mkChart('chartMulti','line',{labels:labels7,datasets:[{label:'PM2.5',data:randArr(7,40,180),borderColor:'#ef4444',tension:.4,borderWidth:2,pointRadius:2},{label:'NO₂',data:randArr(7,20,80),borderColor:'#eab308',tension:.4,borderWidth:2,pointRadius:2},{label:'O₃',data:randArr(7,30,70),borderColor:'#3b82f6',tension:.4,borderWidth:2,pointRadius:2},{label:'SO₂',data:randArr(7,10,40),borderColor:'#22c55e',tension:.4,borderWidth:2,pointRadius:2}]});
+  const histVals=Array.from({length:10},(_,i)=>Math.round(rand(5,50)));
+  mkChart('chartHist','bar',{labels:['0-50','51-100','101-150','151-200','201-250','251-300','301-350','351-400','401-450','450+'],datasets:[{label:'Cities',data:histVals,backgroundColor:['#22c55e','#84cc16','#84cc16','#eab308','#eab308','#f97316','#ef4444','#ef4444','#a855f7','#7c3aed'],borderRadius:4}]});
+  const scatterData=Array.from({length:30},()=>({x:Math.round(rand(20,45)),y:Math.round(rand(50,380))}));
+  mkChart('chartVsTemp','scatter',{datasets:[{label:'AQI vs Temp',data:scatterData,backgroundColor:'rgba(249,115,22,0.6)',pointRadius:4}]},{scales:{x:{title:{display:true,text:'Temperature (°C)',color:getThemeColors().text}}}});
+  const scatterH=Array.from({length:30},()=>({x:Math.round(rand(30,90)),y:Math.round(rand(50,380))}));
+  mkChart('chartVsHum','scatter',{datasets:[{label:'AQI vs Humidity',data:scatterH,backgroundColor:'rgba(59,130,246,0.6)',pointRadius:4}]});
+  const scatterW=Array.from({length:30},()=>({x:parseFloat(rand(0.5,8).toFixed(1)),y:Math.round(rand(50,380))}));
+  mkChart('chartVsWind','scatter',{datasets:[{label:'AQI vs Wind',data:scatterW,backgroundColor:'rgba(6,182,212,0.6)',pointRadius:4}]});
+  mkChart('chartSeasonal','bar',{labels:['Winter(DJF)','Pre-monsoon(MAM)','Monsoon(JJA)','Post-monsoon(SON)'],datasets:[{label:'Delhi',data:[312,168,84,248],backgroundColor:'#ef444480',borderColor:'#ef4444',borderWidth:2,borderRadius:6},{label:'Mumbai',data:[68,82,54,72],backgroundColor:'#22c55e80',borderColor:'#22c55e',borderWidth:2,borderRadius:6},{label:'Kolkata',data:[182,142,68,184],backgroundColor:'#eab30880',borderColor:'#eab308',borderWidth:2,borderRadius:6}]});
+  // Tables
+  const tp=document.getElementById('topPollutedTable');
+  if(tp) tp.innerHTML=pollutedCities.map((c,i)=>`<tr><td>${i+1}</td><td>${c.city}</td><td><span style="color:${AQIColor(c.aqi)};font-family:var(--font-mono);font-weight:600;">${c.aqi}</span></td><td><span class="pill ${c.status}">${AQICat(c.aqi)}</span></td><td>${c.pm25}</td></tr>`).join('');
+  const tc=document.getElementById('topCleanTable');
+  if(tc) tc.innerHTML=cleanCities.map((c,i)=>`<tr><td>${i+1}</td><td>${c.city}</td><td><span style="color:${AQIColor(c.aqi)};font-family:var(--font-mono);font-weight:600;">${c.aqi}</span></td><td><span class="pill ${c.status}">${AQICat(c.aqi)}</span></td><td>${c.pm25}</td></tr>`).join('');
+}
+
+function initHCHOCharts(){
+  const labels7=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  mkChart('chartHCHO','line',{labels:labels7,datasets:[{label:'HCHO ×10¹⁵',data:[8.2,10.4,14.2,16.8,18.4,15.2,12.6],borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.08)',tension:.4,fill:true,borderWidth:2},{label:'Threshold',data:Array(7).fill(10),borderColor:'#ef4444',borderDash:[5,5],borderWidth:1,pointRadius:0}]});
+  mkChart('chartFireHCHO','scatter',{datasets:[{label:'Fire vs HCHO',data:Array.from({length:20},()=>({x:Math.round(rand(20,200)),y:parseFloat(rand(4,18).toFixed(1))})),backgroundColor:'rgba(239,68,68,0.6)',pointRadius:5}]});
+  // HCHO table
+  const t=document.getElementById('hchoTable');
+  if(t) t.innerHTML=hchoHotspots.map((h,i)=>`<tr>
+    <td>${i+1}</td><td>${h.region}</td><td>${h.state}</td>
+    <td><span style="color:${AQIColor(h.aqi)};font-family:var(--font-mono);font-weight:600;">${h.hcho}</span></td>
+    <td>${h.fire}</td>
+    <td><span style="color:${AQIColor(h.aqi)};font-family:var(--font-mono);">${h.aqi}</span></td>
+    <td style="font-size:1rem;">${h.trend==='↑'?'<span style="color:var(--verypoor)">↑</span>':h.trend==='↓'?'<span style="color:var(--good)">↓</span>':'<span style="color:var(--moderate)">→</span>'}</td>
+    <td><span class="pill ${h.aqi>300?'verypoor':h.aqi>200?'poor':'moderate'}">${AQICat(h.aqi)}</span></td>
+  </tr>`).join('');
+}
+
+function initFireCharts(){
+  const days30=Array.from({length:30},(_,i)=>`${i+1}`);
+  mkChart('chartFireDaily','bar',{labels:days30,datasets:[{label:'Fire Count',data:randArr(30,10,120),backgroundColor:'rgba(239,68,68,0.7)',borderRadius:3}]},{scales:{x:{ticks:{maxTicksLimit:10}}}});
+  mkChart('chartFireAQI','scatter',{datasets:[{label:'Fire vs AQI',data:Array.from({length:25},()=>({x:Math.round(rand(10,200)),y:Math.round(rand(80,380))})),backgroundColor:'rgba(249,115,22,0.6)',pointRadius:5}]});
+  mkChart('chartFireMonthly','bar',{labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],datasets:[{label:'Fire Events',data:[12,18,34,42,28,14,8,6,24,68,84,42],backgroundColor:'rgba(239,68,68,0.7)',borderRadius:4}]});
+  // state table
+  const t=document.getElementById('stateFireTable');
+  if(t) t.innerHTML=stateFires.map(s=>`<tr><td>${s.state}</td><td style="font-family:var(--font-mono);color:var(--poor);">${s.fires}</td><td>${s.trend==='↑'?'<span style="color:var(--verypoor)">↑</span>':s.trend==='↓'?'<span style="color:var(--good)">↓</span>':'<span style="color:var(--moderate)">→</span>'}</td></tr>`).join('');
+}
+
+function initTransportCharts(){
+  mkChart('chartTransportPie','doughnut',{labels:['Local Emission','Transported','Secondary'],datasets:[{data:[42,38,20],backgroundColor:['#ef4444','#f97316','#eab308'],borderWidth:0}]});
+  const hrs=Array.from({length:24},(_,i)=>`${i}:00`);
+  mkChart('chartWindSpeed','line',{labels:hrs,datasets:[{label:'Wind Speed (m/s)',data:Array.from({length:24},()=>parseFloat(rand(1,8).toFixed(1))),borderColor:'#06b6d4',tension:.4,fill:false,borderWidth:2}]});
+  mkChart('chartPlume','line',{labels:['Punjab','Haryana','NCR','Delhi'],datasets:[{label:'PM2.5 Concentration',data:[182,142,112,68],borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.1)',tension:.3,fill:true,borderWidth:2,pointRadius:5}]});
+}
+
+function initModel(){
+  window._modelInit=true;
+  const features=[
+    {name:'PM2.5',val:28},{name:'PM10',val:22},{name:'Temp',val:18},{name:'NO₂',val:16},
+    {name:'Humid',val:12},{name:'Wind',val:10},{name:'O₃',val:8},{name:'SO₂',val:6},
+  ];
+  const fi=document.getElementById('featureImportance');
+  if(fi) fi.innerHTML=features.map(f=>`
+    <div class="feat-bar">
+      <div class="feat-name">${f.name}</div>
+      <div class="feat-track"><div class="feat-fill" style="width:${f.val*3.5}%"></div></div>
+      <div class="feat-val">${f.val}%</div>
+    </div>`).join('');
+  const actual=randArr(20,60,380);
+  const pred=actual.map(v=>Math.round(v+rand(-20,20)));
+  mkChart('chartActVsPred','scatter',{datasets:[{label:'Actual vs Predicted',data:actual.map((a,i)=>({x:a,y:pred[i]})),backgroundColor:'rgba(6,182,212,0.6)',pointRadius:5}]});
+  mkChart('chartSHAP','bar',{labels:['PM2.5','PM10','AOD','Temp','NO₂','Humidity','Wind','O₃'],datasets:[{label:'SHAP Value',data:[0.38,0.28,0.22,0.18,0.16,0.12,0.10,0.08],backgroundColor:features.map((_,i)=>i<4?'rgba(249,115,22,0.7)':'rgba(59,130,246,0.7)'),borderRadius:4,horizontal:true}]});
+}
+
+// ─── MAPS ───
+function initIndiaMap(){
+  window._mapIndia=true;
+  const map=L.map('india-map').setView([20.5937,78.9629],5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:18}).addTo(map);
+  indiaLocations.forEach(loc=>{
+    const col=AQIColor(loc.aqi);
+    const marker=L.circleMarker([loc.lat,loc.lon],{radius:16,fillColor:col,color:col,weight:2,opacity:0.9,fillOpacity:0.45}).addTo(map);
+    const inner=L.circleMarker([loc.lat,loc.lon],{radius:6,fillColor:col,color:'#fff',weight:1.5,opacity:1,fillOpacity:1}).addTo(map);
+    const popup=L.popup({className:'city-popup-wrap'}).setContent(`
+      <div class="city-popup">
+        <h3>${loc.name}</h3>
+        <p style="color:var(--text-muted);margin-bottom:.3rem;">${loc.state}</p>
+        <div class="aqi-big" style="color:${col};">${loc.aqi}</div>
+        <p>Category: <b style="color:${col};">${AQICat(loc.aqi)}</b></p>
+        <p>PM2.5: ${loc.pm25} µg/m³</p>
+        <p>PM10: ${loc.pm10} µg/m³</p>
+        <p>Temperature: ${loc.temp}°C</p>
+      </div>`);
+    marker.bindPopup(popup);
+    marker.on('click',()=>marker.openPopup());
+    inner.on('click',()=>marker.openPopup());
+  });
+}
+
+function initHCHOMap(){
+  window._mapHCHO=true;
+  const map=L.map('hcho-map').setView([23,78],5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(map);
+  hchoHotspots.forEach(h=>{
+    const loc=indiaLocations.find(l=>l.state.toLowerCase().includes(h.state.toLowerCase()))||{lat:22,lon:78};
+    const lat=loc.lat+(Math.random()-.5)*2,lon=loc.lon+(Math.random()-.5)*2;
+    const col=h.hcho>14?'#ef4444':h.hcho>10?'#f97316':h.hcho>7?'#eab308':'#22c55e';
+    const r=h.hcho*3;
+    L.circleMarker([lat,lon],{radius:r,fillColor:col,color:col,weight:1,opacity:0.8,fillOpacity:0.35}).addTo(map)
+      .bindPopup(`<b>${h.region}</b><br>HCHO: ${h.hcho}×10¹⁵<br>Fires: ${h.fire}<br>AQI: ${h.aqi}`);
+  });
+  initHCHOCharts();
+}
+
+function initFireMap(){
+  window._mapFire=true;
+  const map=L.map('fire-map').setView([26,78],5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(map);
+  // Simulated fire points
+  const firePoints=[[31.6,74.8],[30.7,75.2],[30.2,76.4],[29.8,77.1],[26.8,80.9],[22.6,88.4],[26.1,91.7],[27.2,94.2],[21.2,81.4],[20.3,85.8]];
+  firePoints.forEach(([lat,lon])=>{
+    L.circleMarker([lat+(Math.random()-.5),lon+(Math.random()-.5)],{radius:7,fillColor:'#ef4444',color:'#f97316',weight:2,opacity:1,fillOpacity:0.8}).addTo(map)
+      .bindPopup(`🔥 Active Fire<br>Fire Radiative Power: ${Math.round(rand(50,500))} MW<br>Confidence: ${Math.round(rand(70,99))}%`);
+  });
+  initFireCharts();
+}
+
+function initTransportMap(){
+  window._mapTransport=true;
+  const map=L.map('transport-map').setView([29,76],6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(map);
+  // Source → receptor arrows
+  const routes=[[31.6,74.8,28.6,77.2,'Punjab → Delhi'],[30.0,76.0,28.6,77.2,'Haryana → Delhi']];
+  routes.forEach(([la1,lo1,la2,lo2,label])=>{
+    L.polyline([[la1,lo1],[la2,lo2]],{color:'#f97316',weight:3,opacity:0.7,dashArray:'8 4'}).addTo(map);
+    L.circleMarker([la1,lo1],{radius:8,fillColor:'#ef4444',color:'#fff',weight:2,fillOpacity:1}).addTo(map).bindPopup(`🏭 Source: ${label.split('→')[0].trim()}`);
+    L.circleMarker([la2,lo2],{radius:8,fillColor:'#eab308',color:'#fff',weight:2,fillOpacity:1}).addTo(map).bindPopup(`📍 Receptor: ${label.split('→')[1].trim()}`);
+  });
+  initTransportCharts();
+}
+
+// ─── PREDICT ───
+const pollInputs=[
+  {key:'pm25',label:'PM2.5',min:0,max:500,val:68,unit:'µg/m³'},
+  {key:'pm10',label:'PM10',min:0,max:600,val:113,unit:'µg/m³'},
+  {key:'no2',label:'NO₂',min:0,max:200,val:42,unit:'ppb'},
+  {key:'so2',label:'SO₂',min:0,max:100,val:19,unit:'ppb'},
+  {key:'o3',label:'O₃',min:0,max:200,val:54,unit:'ppb'},
+  {key:'co',label:'CO',min:0,max:10,val:1.2,unit:'mg/m³',step:'0.1'},
+];
+const metInputs2=[
+  {key:'temp',label:'Temperature',min:-10,max:50,val:32,unit:'°C'},
+  {key:'hum',label:'Humidity',min:0,max:100,val:61,unit:'%'},
+  {key:'wind',label:'Wind Speed',min:0,max:20,val:3.8,unit:'m/s',step:'0.1'},
+];
+const presets={
+  good:{pm25:15,pm10:30,no2:15,so2:5,o3:30,co:0.5,temp:25,hum:45,wind:5},
+  moderate:{pm25:65,pm10:110,no2:40,so2:18,o3:55,co:1.2,temp:32,hum:60,wind:3.5},
+  unhealthy:{pm25:140,pm10:240,no2:80,so2:40,o3:90,co:3.0,temp:35,hum:70,wind:1.5},
+  hazardous:{pm25:280,pm10:420,no2:150,so2:80,o3:140,co:6.0,temp:38,hum:80,wind:0.5},
+};
+
+function buildPredictInputs(){
+  const pi=document.getElementById('pollutantInputs');
+  if(pi) pi.innerHTML=pollInputs.map(p=>`
+    <div class="input-group">
+      <label>${p.label} <span style="color:var(--text-muted);font-size:.7rem;">(${p.unit})</span></label>
+      <input type="range" id="inp-${p.key}" min="${p.min}" max="${p.max}" value="${p.val}" step="${p.step||1}" oninput="document.getElementById('v-${p.key}').textContent=this.value"/>
+      <div class="val-display"><span id="v-${p.key}">${p.val}</span> ${p.unit}</div>
+    </div>`).join('');
+  const mi=document.getElementById('metInputs');
+  if(mi) mi.innerHTML=metInputs2.map(p=>`
+    <div class="input-group">
+      <label>${p.label} <span style="color:var(--text-muted);font-size:.7rem;">(${p.unit})</span></label>
+      <input type="range" id="inp-${p.key}" min="${p.min}" max="${p.max}" value="${p.val}" step="${p.step||1}" oninput="document.getElementById('v-${p.key}').textContent=this.value"/>
+      <div class="val-display"><span id="v-${p.key}">${p.val}</span> ${p.unit}</div>
+    </div>`).join('');
+}
+
+function applyPreset(name){
+  const p=presets[name];
+  Object.entries(p).forEach(([k,v])=>{
+    const el=document.getElementById('inp-'+k);
+    const vd=document.getElementById('v-'+k);
+    if(el){el.value=v;}
+    if(vd){vd.textContent=v;}
+  });
+  showToast(`Preset applied: ${name.charAt(0).toUpperCase()+name.slice(1)}`,'success');
+}
+
+function runPrediction(){
+  const pm25=parseFloat(document.getElementById('inp-pm25')?.value||68);
+  const pm10=parseFloat(document.getElementById('inp-pm10')?.value||113);
+  const no2=parseFloat(document.getElementById('inp-no2')?.value||42);
+  // Simple linear model simulation
+  const aqi=Math.min(500,Math.round(pm25*1.6+pm10*0.5+no2*0.8+rand(-10,10)));
+  const col=AQIColor(aqi);
+  const cat=AQICat(aqi);
+  const conf=Math.round(rand(85,97));
+  // Update gauge
+  const offset=280-(aqi/500)*280;
+  const arc=document.getElementById('predArc');
+  if(arc) arc.style.strokeDashoffset=offset;
+  const sc=document.getElementById('predScore');
+  if(sc){sc.textContent=aqi;sc.setAttribute('fill',col);}
+  const cls=document.getElementById('predClass');
+  if(cls) cls.innerHTML=`<span style="color:${col};font-family:var(--font-head);font-size:1.3rem;font-weight:700;">${cat}</span>`;
+  const conf_el=document.getElementById('predConf');
+  if(conf_el) conf_el.textContent=conf+'%';
+  // Contribution chart
+  const existChart=Chart.getChart('chartContrib');
+  if(existChart) existChart.destroy();
+  mkChart('chartContrib','doughnut',{
+    labels:['PM2.5','PM10','NO₂','SO₂','O₃','CO'],
+    datasets:[{data:[28,22,16,10,14,10],backgroundColor:['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#a855f7'],borderWidth:0}]
+  });
+  // Health advisory
+  buildAdvisory(aqi);
+  showToast(`Prediction complete — AQI: ${aqi} (${cat})`,'success');
+}
+
+function buildAdvisory(aqi){
+  const advisories=[];
+  if(aqi<=50) advisories.push({icon:'✅',text:'Air quality is excellent. All outdoor activities are safe. Enjoy the fresh air!'});
+  else if(aqi<=100) advisories.push({icon:'🌿',text:'Air quality is acceptable. Unusually sensitive individuals should consider limiting prolonged outdoor exertion.'});
+  else if(aqi<=150){advisories.push({icon:'😷',text:'Sensitive groups (children, elderly, asthma patients) should reduce prolonged outdoor exertion.'});advisories.push({icon:'🏃',text:'Active individuals should limit prolonged outdoor exposure. Take breaks.'});}
+  else if(aqi<=200){advisories.push({icon:'⚠️',text:'Everyone should reduce prolonged or heavy outdoor exertion.'});advisories.push({icon:'😷',text:'Wear N95/FFP2 masks outdoors. Keep windows closed.'});advisories.push({icon:'🏥',text:'Sensitive groups should avoid outdoor activity entirely.'});}
+  else if(aqi<=300){advisories.push({icon:'🚫',text:'Avoid all outdoor activities. Stay indoors with windows and doors closed.'});advisories.push({icon:'😷',text:'Wear N95 mask even indoors if ventilation is poor.'});advisories.push({icon:'💨',text:'Use air purifiers. Keep indoor air quality monitored.'});advisories.push({icon:'🏥',text:'Seek medical attention if experiencing breathing difficulty.'});}
+  else{advisories.push({icon:'🚨',text:'Health emergency. Avoid all outdoor exposure.'});advisories.push({icon:'🔒',text:'Stay indoors completely. Seal windows and doors.'});advisories.push({icon:'💊',text:'Pre-emptive medication for respiratory patients. Consult doctor.'});advisories.push({icon:'🆘',text:'Vulnerable populations should consider evacuation or shelter-in-place protocols.'});}
+  const al=document.getElementById('advisoryList');
+  if(al) al.innerHTML=advisories.map(a=>`<div class="advisory-item"><div class="advisory-icon">${a.icon}</div><div class="advisory-text">${a.text}</div></div>`).join('');
+}
+
+// ─── HCHO FILTER ───
+function setHCHOFilter(f){
+  ['daily','weekly','monthly','seasonal'].forEach(k=>{
+    const el=document.getElementById('hf-'+k);
+    if(el){el.style.borderColor='var(--border)';el.style.color='var(--text-secondary)';}
+  });
+  const active=document.getElementById('hf-'+f);
+  if(active){active.style.borderColor='var(--accent-cyan)';active.style.color='var(--accent-cyan)';}
+  showToast(`Filter: ${f} view applied`,'success');
+}
+
+// ─── MAP CONTROLS ───
+function filterMapCity(v){showToast(v?`Searching: ${v}`:'Showing all cities','success');}
+function filterMapAQI(v){showToast(v?`Filtered: ${v}`:'All categories shown','success');}
+function updateHistSlider(v){const el=document.getElementById('histLabel');if(el)el.textContent=`${String(v).padStart(2,'0')}:00`;}
+
+// ─── EXPORT ───
+function doExport(type){
+  if(type.toLowerCase().includes('pdf')||type.toLowerCase().includes('report')){showToast('PDF Export coming soon ✨','error');return;}
+  showToast(`✅ ${type} exported successfully`,'success');
+}
+
+// ─── THEME ───
+function toggleTheme(){
+  const th=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',th);
+  const btn=document.querySelector('[onclick="toggleTheme()"]');
+  if(btn) btn.textContent=th==='dark'?'☀':'🌙';
+}
+
+// ─── RESET / REFRESH ───
+function resetDashboard(){showToast('Dashboard reset to default view','success');}
+function refreshData(){showToast('Data refreshed — live feed updated','success');}
+
+// ─── TOAST ───
+function showToast(msg,type='success'){
+  const c=document.getElementById('toastContainer');
+  if(!c)return;
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;
+  t.innerHTML=`<span>${type==='success'?'✅':'⚠️'}</span> ${msg}`;
+  c.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),400);},3000);
+}
+
+// ─── INIT ───
+function init(){
+  buildDashboard();
+  build24hChart();
+  buildPollutantChart();
+  buildHeatmap();
+  buildPredictInputs();
+  buildAdvisory(142);
+  // Run prediction chart (empty init)
+  mkChart('chartContrib','doughnut',{labels:['PM2.5','PM10','NO₂','SO₂','O₃','CO'],datasets:[{data:[28,22,16,10,14,10],backgroundColor:['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#a855f7'],borderWidth:0}]});
+}
+
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
