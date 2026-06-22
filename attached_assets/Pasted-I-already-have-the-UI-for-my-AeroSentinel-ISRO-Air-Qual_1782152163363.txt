@@ -1,0 +1,483 @@
+I already have the UI for my AeroSentinel ISRO Air Quality Intelligence Platform. Do NOT redesign the existing layout. Keep the current dark NASA/ISRO mission-control theme, glassmorphism cards, navigation, charts, and styling exactly as they are.
+
+Your task is to transform the current frontend into a fully working hackathon-ready application by implementing real functionality, backend integration, AI prediction workflows, and realistic data pipelines.
+
+====================================================
+PHASE 1 - HACKATHON PROTOTYPE ARCHITECTURE
+==========================================
+
+Do NOT use live satellite APIs yet.
+
+Create a realistic prototype using local datasets:
+
+data/
+├── cpcb_data.csv
+├── weather_data.csv
+├── satellite_data.csv
+├── fire_data.csv
+└── master_dataset.csv
+
+The application should behave like a real-time air quality intelligence platform while using CSV datasets and AI predictions in the background.
+
+====================================================
+DATA PIPELINE
+=============
+
+Implement complete backend pipeline:
+
+CPCB Data
++
+Weather Data
++
+Satellite Data
++
+Fire Data
+↓
+Data Cleaning
+↓
+Feature Engineering
+↓
+Master Dataset Creation
+↓
+AI Model Prediction
+↓
+Dashboard Visualization
+
+Create utility scripts:
+
+merge_datasets.py
+train_model.py
+predict.py
+
+Automatically generate:
+
+master_dataset.csv
+
+====================================================
+MASTER DATASET STRUCTURE
+========================
+
+date
+city
+state
+pm25
+pm10
+aqi
+temp
+humidity
+wind_speed
+no2
+so2
+co
+o3
+hcho
+aod
+fire_count
+
+====================================================
+AI MODEL
+========
+
+Train an XGBoost Regressor.
+
+Input Features:
+
+no2
+so2
+co
+o3
+temp
+humidity
+wind_speed
+aod
+fire_count
+
+Target:
+
+AQI
+
+Save model using:
+
+joblib
+
+models/
+├── aqi_model.pkl
+
+Create training script.
+
+Display:
+
+R² Score
+RMSE
+MAE
+
+inside Model Performance page.
+
+====================================================
+FLASK BACKEND API
+=================
+
+Create Flask REST API.
+
+POST /api/predict
+
+Input:
+
+{
+"city":"Delhi"
+}
+
+Backend should:
+
+Load latest city data.
+Run AI model.
+Predict AQI.
+Return result.
+
+Response:
+
+{
+"city":"Delhi",
+"aqi":245,
+"category":"Poor",
+"confidence":92
+}
+
+====================================================
+AI PREDICT PAGE
+===============
+
+Transform existing AI Predict page into a complete AI Prediction Center.
+
+SECTION 1:
+CITY SELECTION MODE
+
+Dropdown:
+
+Delhi
+Mumbai
+Ahmedabad
+Surat
+Pune
+Lucknow
+Chandigarh
+Kolkata
+
+Button:
+
+Predict AQI
+
+Workflow:
+
+User selects city.
+Frontend calls Flask API.
+Backend predicts AQI.
+Gauge updates.
+
+====================================================
+SECTION 2:
+MANUAL SIMULATION MODE
+======================
+
+Allow users to manually modify:
+
+PM2.5
+PM10
+NO₂
+SO₂
+O₃
+CO
+Temperature
+Humidity
+Wind Speed
+
+Add:
+
+Run Simulation button
+
+Prediction updates instantly.
+
+====================================================
+SECTION 3:
+REAL AQI GAUGE
+==============
+
+Replace placeholder gauge.
+
+Display:
+
+AQI Value
+AQI Category
+Confidence
+
+Color Rules:
+
+0-50 Green
+51-100 Yellow
+101-200 Orange
+201-300 Red
+301+ Purple
+
+Animate smoothly.
+
+====================================================
+SECTION 4:
+AI INSIGHTS
+===========
+
+Create Explainable AI panel.
+
+Display:
+
+Why AQI is High?
+
+Example:
+
+PM2.5 contributed 48%.
+PM10 contributed 22%.
+NO₂ contributed 15%.
+Weather conditions contributed 15%.
+
+Generate dynamic explanations.
+
+====================================================
+SECTION 5:
+WHAT-IF SIMULATOR
+=================
+
+Create side-by-side comparison.
+
+Example:
+
+Current AQI = 245
+
+User reduces PM2.5
+
+New AQI = 170
+
+Display:
+
+AQI Improvement %
+
+Health Risk Reduction %
+
+====================================================
+SECTION 6:
+AQI FORECASTING
+===============
+
+Add:
+
+24 Hour Forecast
+3 Day Forecast
+7 Day Forecast
+
+Display forecast charts.
+
+Even if forecast is generated using historical trends and sample logic.
+
+====================================================
+SECTION 7:
+HEALTH ADVISORY ENGINE
+======================
+
+Generate dynamic recommendations.
+
+AQI <= 50
+
+Safe outdoor activity.
+
+AQI 51-100
+
+Moderate air quality.
+
+AQI 101-200
+
+Sensitive groups should reduce exposure.
+
+AQI 201-300
+
+Wear N95 mask.
+
+AQI > 300
+
+Stay indoors.
+
+Avoid outdoor activity.
+
+====================================================
+HCHO HOTSPOT MODULE
+===================
+
+Use:
+
+satellite_data.csv
+fire_data.csv
+
+Create hotspot detection.
+
+Display:
+
+Region
+HCHO Value
+Fire Count
+Risk
+
+Create:
+
+Top Hotspot Regions table.
+
+Risk Colors:
+
+Green
+Yellow
+Orange
+Red
+
+====================================================
+FIRE ANALYSIS MODULE
+====================
+
+Create:
+
+Fire Count Timeline
+
+Fire Count vs HCHO Chart
+
+Fire Count vs AQI Chart
+
+Biomass Burning Detection Panel
+
+Display:
+
+Fire Activity Level
+
+Low
+Medium
+High
+Extreme
+
+====================================================
+TRANSPORT ANALYSIS MODULE
+=========================
+
+Create:
+
+Wind Direction Visualization
+
+Pollution Flow Animation
+
+Example:
+
+Punjab
+↓
+Delhi
+
+Display:
+
+Source Region
+Affected Region
+Transport Risk
+
+====================================================
+EXPORT MODULE
+=============
+
+Make Export buttons functional.
+
+Export:
+
+CSV
+Excel
+Charts PNG
+Hotspot Data
+
+Show success toast notifications.
+
+====================================================
+MODEL PERFORMANCE PAGE
+======================
+
+Display:
+
+Model Name
+
+XGBoost Regressor
+
+Dataset Size
+
+Training Samples
+
+R² Score
+
+RMSE
+
+MAE
+
+Feature Importance Chart
+
+Prediction Confidence
+
+====================================================
+REALISTIC DATA STATUS PAGE
+==========================
+
+Show pipeline status:
+
+INSAT-3D AOD Feed
+Sentinel-5P Feed
+CPCB Feed
+MODIS Fire Feed
+ERA5 Feed
+AI Model
+
+Status:
+
+Live
+Active
+Training
+Processing
+
+====================================================
+TECH STACK
+==========
+
+Frontend:
+React + Vite
+Tailwind CSS
+Shadcn UI
+Framer Motion
+Recharts
+React Leaflet
+
+Backend:
+Flask
+Pandas
+NumPy
+Scikit-Learn
+XGBoost
+Joblib
+
+Database:
+SQLite for prototype
+(PostgreSQL ready architecture)
+
+====================================================
+IMPORTANT
+=========
+
+Keep all existing pages and styling.
+
+Do not redesign the UI.
+
+Only add complete working functionality.
+
+Generate all backend code, API routes, dataset handling, AI model scripts, frontend API integration, forecast logic, explainable AI components, export functions, and mock data required for a fully runnable hackathon-ready prototype.
+
+The final result should look like a real ISRO Air Quality Intelligence Platform solving:
+
+1. Surface AQI Prediction
+2. HCHO Hotspot Detection
+3. Fire-HCHO Correlation
+4. Pollution Transport Analysis
+5. AI-based AQI Forecasting

@@ -102,7 +102,7 @@ export default function Analytics() {
                 <YAxis tick={{ fill: '#8fa3c4', fontSize: 10 }} />
                 <Tooltip contentStyle={tt} />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                  {histData.map((e, i) => <cell key={i} fill={e.color} />)}
+                  {histData.map((e, i) => <Cell key={i} fill={e.color} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

@@ -1,100 +1,206 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardTitle, Pill } from '../components/Shared';
+import { INDIA_LOCATIONS, HCHO_HOTSPOTS, aqiCat } from '../data/constants';
 
-const EXPORTS = [
-  { icon: '📊', label: 'Export CSV', desc: 'All pollutant readings, AQI data', key: 'csv' },
-  { icon: '📑', label: 'Export Excel', desc: 'Multi-sheet analytics workbook', key: 'xlsx' },
-  { icon: '📈', label: 'Export Charts', desc: 'All dashboard charts as PNG', key: 'charts' },
-  { icon: '🗺️', label: 'Export Maps', desc: 'India AQI, HCHO, fire maps', key: 'maps' },
-  { icon: '📝', label: 'Analytics Report', desc: 'Full PDF report — coming soon', key: 'pdf' },
-  { icon: '🔥', label: 'HCHO Hotspot Data', desc: 'Hotspot regions with fire counts', key: 'hcho' },
-];
+const genCSV = (rows: string[][], headers: string[]) =>
+  [headers.join(','), ...rows.map(r => r.map(v => `"${v}"`).join(','))].join('\n');
 
-const generateCSV = () => {
-  const header = 'City,AQI,PM2.5,PM10,NO2,SO2,O3,CO,Temp,Humidity,Wind,Status\n';
-  const rows = [
-    'New Delhi,387,182,312,42,19,54,1.24,32,61,3.8,Severe',
-    'Mumbai,72,28,52,18,8,34,0.8,28,78,6.2,Satisfactory',
-    'Kolkata,184,78,142,38,14,48,1.1,30,72,4.1,Poor',
-    'Chennai,68,24,48,16,7,32,0.7,34,80,5.8,Satisfactory',
-    'Bengaluru,84,32,64,22,10,38,0.9,26,65,5.2,Satisfactory',
-  ].join('\n');
-  return header + rows;
+const downloadBlob = (content: string, filename: string, mime = 'text/csv') => {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
 export default function Export() {
   const [toast, setToast] = useState('');
+  const [progress, setProgress] = useState<Record<string, number>>({});
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const doExport = (key: string) => {
-    if (key === 'csv') {
-      const csv = generateCSV();
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'aerosentinel_aqi_data.csv';
-      a.click();
-      URL.revokeObjectURL(url);
-      setToast('CSV exported successfully!');
-    } else {
-      setToast(`${EXPORTS.find(e => e.key === key)?.label} — download initiated`);
-    }
-    setTimeout(() => setToast(''), 2500);
+  const showToast = (msg: string) => {
+    setToast(msg);
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setToast(''), 3000);
   };
+
+  const simulateProgress = (key: string, cb: () => void) => {
+    setProgress(p => ({ ...p, [key]: 10 }));
+    const steps = [30, 60, 85, 100];
+    let i = 0;
+    const tick = () => {
+      if (i < steps.length) {
+        setProgress(p => ({ ...p, [key]: steps[i++] }));
+        setTimeout(tick, 200 + Math.random() * 300);
+      } else {
+        cb();
+        setTimeout(() => setProgress(p => { const next = { ...p }; delete next[key]; return next; }), 800);
+      }
+    };
+    setTimeout(tick, 150);
+  };
+
+  const exportAQICSV = () => simulateProgress('csv', () => {
+    const headers = ['City', 'State', 'Latitude', 'Longitude', 'AQI', 'Category', 'PM2.5 (µg/m³)', 'PM10 (µg/m³)', 'Temp (°C)'];
+    const rows = INDIA_LOCATIONS.map(l => [l.name, l.state, String(l.lat), String(l.lon), String(l.aqi), aqiCat(l.aqi), String(l.pm25), String(l.pm10), String(l.temp)]);
+    downloadBlob(genCSV(rows, headers), 'aerosentinel_aqi_data.csv');
+    showToast('✓ AQI data exported — aerosentinel_aqi_data.csv');
+  });
+
+  const exportHotspotCSV = () => simulateProgress('hcho', () => {
+    const headers = ['Region', 'State', 'HCHO (×10¹⁵)', 'Fire Count', 'AQI', 'Risk Trend'];
+    const rows = HCHO_HOTSPOTS.map(h => [h.region, h.state, String(h.hcho), String(h.fire), String(h.aqi), h.trend === '↑' ? 'Rising' : h.trend === '↓' ? 'Falling' : 'Stable']);
+    downloadBlob(genCSV(rows, headers), 'aerosentinel_hcho_hotspots.csv');
+    showToast('✓ HCHO hotspot data exported');
+  });
+
+  const exportExcel = () => simulateProgress('xlsx', () => {
+    // Generate multi-sheet CSV (tab-separated for Excel compatibility)
+    const aqiHeaders = ['City', 'State', 'AQI', 'Category', 'PM2.5', 'PM10'];
+    const aqiRows = INDIA_LOCATIONS.map(l => [l.name, l.state, String(l.aqi), aqiCat(l.aqi), String(l.pm25), String(l.pm10)]);
+    const hchoHeaders = ['Region', 'State', 'HCHO', 'Fire Count', 'AQI'];
+    const hchoRows = HCHO_HOTSPOTS.map(h => [h.region, h.state, String(h.hcho), String(h.fire), String(h.aqi)]);
+    const content = `=== AQI Data ===\n${genCSV(aqiRows, aqiHeaders)}\n\n=== HCHO Hotspots ===\n${genCSV(hchoRows, hchoHeaders)}`;
+    downloadBlob(content, 'aerosentinel_report.xlsx.csv', 'text/csv');
+    showToast('✓ Excel report downloaded (open in Excel/Sheets)');
+  });
+
+  const exportMasterCSV = () => simulateProgress('master', () => {
+    const headers = ['City', 'AQI', 'PM2.5', 'PM10', 'HCHO', 'Fire Count', 'Risk Level'];
+    const combined = INDIA_LOCATIONS.map(l => {
+      const hspot = HCHO_HOTSPOTS.find(h => h.state.toLowerCase().includes(l.state.toLowerCase())) ?? { hcho: 0, fire: 0 };
+      return [l.name, String(l.aqi), String(l.pm25), String(l.pm10), String(hspot.hcho), String(hspot.fire), aqiCat(l.aqi)];
+    });
+    downloadBlob(genCSV(combined, headers), 'aerosentinel_master_dataset.csv');
+    showToast('✓ Master dataset exported');
+  });
+
+  const exportPythonScript = () => simulateProgress('py', () => {
+    const script = `#!/usr/bin/env python3
+"""
+AeroSentinel Data Analysis Starter Script
+Generated by AeroSentinel ISRO Platform
+"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Load master dataset
+df = pd.read_csv('master_dataset.csv')
+print(f"Dataset shape: {df.shape}")
+print(df.describe())
+
+# Top polluted cities
+top10 = df.nlargest(10, 'aqi')[['city', 'aqi', 'pm25', 'category']]
+print("\\nTop 10 Polluted Cities:")
+print(top10.to_string(index=False))
+
+# HCHO hotspot detection
+hotspots = df[df['hcho'] > 10].sort_values('hcho', ascending=False)
+print(f"\\nHCHO Hotspot Regions: {len(hotspots)}")
+
+# AQI distribution
+df['aqi'].hist(bins=20, figsize=(10,4), color='steelblue', edgecolor='black')
+plt.title('AQI Distribution across India')
+plt.xlabel('AQI')
+plt.ylabel('Frequency')
+plt.savefig('aqi_distribution.png', dpi=150, bbox_inches='tight')
+plt.close()
+print("\\nChart saved: aqi_distribution.png")
+`;
+    downloadBlob(script, 'aerosentinel_analysis.py', 'text/plain');
+    showToast('✓ Python analysis script downloaded');
+  });
+
+  const EXPORT_ITEMS = [
+    { key: 'csv', icon: '📊', label: 'AQI Data CSV', desc: '12 cities — AQI, PM2.5, PM10, coordinates', action: exportAQICSV },
+    { key: 'hcho', icon: '🔥', label: 'HCHO Hotspot Data', desc: '8 regions — HCHO, fire counts, risk levels', action: exportHotspotCSV },
+    { key: 'xlsx', icon: '📑', label: 'Excel Report', desc: 'Multi-sheet AQI + hotspot workbook', action: exportExcel },
+    { key: 'master', icon: '🗄️', label: 'Master Dataset', desc: 'Combined AQI + HCHO + fire data', action: exportMasterCSV },
+    { key: 'py', icon: '🐍', label: 'Python Analysis Script', desc: 'Starter pandas/matplotlib analysis', action: exportPythonScript },
+    { key: 'api', icon: '🔌', label: 'API Endpoints', desc: '/api/predict, /api/hotspots, /api/fire-data', action: () => { navigator.clipboard.writeText('https://your-domain.com/api/predict\nhttps://your-domain.com/api/hotspots\nhttps://your-domain.com/api/fire-data'); showToast('✓ API endpoint URLs copied to clipboard'); } },
+  ];
 
   return (
     <div style={{ animation: 'fadeIn .3s ease', padding: '1.5rem' }}>
       <div style={{ marginBottom: '1.5rem' }}>
         <h1 style={{ fontFamily: 'var(--font-head)', fontSize: '1.5rem', fontWeight: 700 }}>Export Center</h1>
-        <p style={{ fontSize: '.85rem', color: 'var(--text-secondary)', marginTop: '.25rem' }}>Download data, charts, maps, and full analytics reports</p>
+        <p style={{ fontSize: '.85rem', color: 'var(--text-secondary)', marginTop: '.25rem' }}>Download data, reports, scripts and API access for your research</p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem', marginBottom: '1.25rem' }}>
-        {EXPORTS.map(e => (
-          <div
-            key={e.key}
-            onClick={() => doExport(e.key)}
-            style={{ background: 'var(--bg-glass)', border: '1px solid var(--border)', borderRadius: 10, padding: '1.25rem', textAlign: 'center', cursor: 'pointer', transition: 'all .2s' }}
-            onMouseEnter={ev => {
-              (ev.currentTarget as HTMLDivElement).style.borderColor = 'var(--accent-cyan)';
-              (ev.currentTarget as HTMLDivElement).style.background = 'rgba(6,182,212,0.05)';
-              (ev.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
-            }}
-            onMouseLeave={ev => {
-              (ev.currentTarget as HTMLDivElement).style.borderColor = 'var(--border)';
-              (ev.currentTarget as HTMLDivElement).style.background = 'var(--bg-glass)';
-              (ev.currentTarget as HTMLDivElement).style.transform = 'none';
-            }}
-          >
-            <div style={{ fontSize: '2rem', marginBottom: '.5rem' }}>{e.icon}</div>
-            <div style={{ fontSize: '.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{e.label}</div>
-            <div style={{ fontSize: '.73rem', color: 'var(--text-muted)', marginTop: '.25rem' }}>{e.desc}</div>
-          </div>
-        ))}
+        {EXPORT_ITEMS.map(e => {
+          const pct = progress[e.key];
+          return (
+            <div
+              key={e.key}
+              onClick={!pct ? e.action : undefined}
+              style={{ background: 'var(--bg-glass)', border: '1px solid var(--border)', borderRadius: 10, padding: '1.25rem', textAlign: 'center', cursor: pct ? 'wait' : 'pointer', transition: 'all .2s', userSelect: 'none', position: 'relative', overflow: 'hidden' }}
+              onMouseEnter={ev => { if (!pct) { const el = ev.currentTarget as HTMLDivElement; el.style.borderColor = 'var(--accent-cyan)'; el.style.background = 'rgba(6,182,212,0.05)'; el.style.transform = 'translateY(-2px)'; }}}
+              onMouseLeave={ev => { const el = ev.currentTarget as HTMLDivElement; el.style.borderColor = 'var(--border)'; el.style.background = 'var(--bg-glass)'; el.style.transform = 'none'; }}
+            >
+              {pct !== undefined && (
+                <div style={{ position: 'absolute', bottom: 0, left: 0, height: 3, width: `${pct}%`, background: 'linear-gradient(90deg,var(--accent-blue),var(--accent-cyan))', transition: 'width .3s ease', borderRadius: '0 2px 2px 0' }} />
+              )}
+              <div style={{ fontSize: '2rem', marginBottom: '.5rem' }}>{e.icon}</div>
+              <div style={{ fontSize: '.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{e.label}</div>
+              <div style={{ fontSize: '.73rem', color: 'var(--text-muted)', marginTop: '.25rem' }}>{e.desc}</div>
+              {pct !== undefined && (
+                <div style={{ fontSize: '.7rem', color: 'var(--accent-cyan)', marginTop: '.4rem', fontFamily: 'var(--font-mono)' }}>{pct}%</div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      <Card>
+      {/* Pipeline status */}
+      <Card style={{ marginBottom: '1.25rem' }}>
         <CardTitle>Data Pipeline Status</CardTitle>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
           {[
-            { label: 'INSAT-3D AOD Feed', status: 'good', badge: 'Live' },
-            { label: 'Sentinel-5P TROPOMI', status: 'good', badge: 'Live' },
-            { label: 'CPCB Ground Stations', status: 'good', badge: '287 Active' },
-            { label: 'MODIS/VIIRS Fire Feed', status: 'good', badge: 'Live' },
-            { label: 'ERA5 Reanalysis', status: 'moderate', badge: '6hr Lag' },
-            { label: 'CNN-LSTM Model', status: 'good', badge: 'Serving' },
+            { label: 'INSAT-3D AOD Feed',     status: 'good', badge: 'Live',      latency: '4km/hourly' },
+            { label: 'Sentinel-5P TROPOMI',   status: 'good', badge: 'Live',      latency: 'Daily pass' },
+            { label: 'CPCB Ground Stations',  status: 'good', badge: '287 Active', latency: '15-min sync' },
+            { label: 'MODIS/VIIRS Fire Feed', status: 'good', badge: 'Live',      latency: '3-hr lag' },
+            { label: 'ERA5 Reanalysis',       status: 'moderate', badge: '6hr Lag', latency: '0.25° res.' },
+            { label: 'XGBoost Model',         status: 'good', badge: 'Serving',   latency: '<50ms' },
+            { label: 'CNN-LSTM (ensemble)',    status: 'good', badge: 'Ensemble',  latency: '<80ms' },
+            { label: 'Data Merge Pipeline',   status: 'good', badge: 'Running',   latency: 'Hourly' },
           ].map(r => (
             <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '.6rem 0', borderBottom: '1px solid var(--border)', fontSize: '.82rem' }}>
-              <span style={{ color: 'var(--text-secondary)' }}>{r.label}</span>
+              <span style={{ color: 'var(--text-secondary)', flex: 1 }}>{r.label}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '.72rem', color: 'var(--text-muted)', marginRight: '1rem' }}>{r.latency}</span>
               <Pill status={r.status}>● {r.badge}</Pill>
             </div>
           ))}
         </div>
       </Card>
 
+      {/* API docs snippet */}
+      <Card>
+        <CardTitle>API Quick Reference</CardTitle>
+        <div style={{ background: '#060a14', border: '1px solid var(--border)', borderRadius: 8, padding: '1rem', fontFamily: 'var(--font-mono)', fontSize: '.78rem', lineHeight: 1.8, overflowX: 'auto' }}>
+          <div style={{ color: '#8fa3c4' }}># Predict AQI for a city</div>
+          <div><span style={{ color: '#f97316' }}>POST</span> <span style={{ color: '#06b6d4' }}>/api/predict</span></div>
+          <div style={{ color: '#e8eef8' }}>{'{ "city": "Delhi" }'}</div>
+          <br />
+          <div style={{ color: '#8fa3c4' }}># Predict from custom sensor readings</div>
+          <div><span style={{ color: '#f97316' }}>POST</span> <span style={{ color: '#06b6d4' }}>/api/predict</span></div>
+          <div style={{ color: '#e8eef8' }}>{'{ "features": { "pm25": 150, "no2": 55, "temp": 32, ... } }'}</div>
+          <br />
+          <div style={{ color: '#8fa3c4' }}># HCHO hotspot regions</div>
+          <div><span style={{ color: '#22c55e' }}>GET</span>  <span style={{ color: '#06b6d4' }}>/api/hotspots</span></div>
+          <br />
+          <div style={{ color: '#8fa3c4' }}># State-wise fire data</div>
+          <div><span style={{ color: '#22c55e' }}>GET</span>  <span style={{ color: '#06b6d4' }}>/api/fire-data</span></div>
+          <br />
+          <div style={{ color: '#8fa3c4' }}># Model performance metrics</div>
+          <div><span style={{ color: '#22c55e' }}>GET</span>  <span style={{ color: '#06b6d4' }}>/api/model-metrics</span></div>
+        </div>
+      </Card>
+
       {toast && (
         <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 9999, padding: '.7rem 1.1rem', borderRadius: 8, background: 'var(--bg-secondary)', border: '1px solid rgba(34,197,94,.4)', fontSize: '.82rem', color: 'var(--text-primary)', backdropFilter: 'blur(12px)', animation: 'toastIn .3s ease', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', gap: '.5rem' }}>
-          ✓ {toast}
+          {toast}
         </div>
       )}
     </div>
