@@ -428,6 +428,58 @@ function buildAnalytics(cityName: string | null): Record<string, unknown> {
   };
 }
 
+// ── GET /api/map-data ─────────────────────────────────────────────────────────
+router.get("/map-data", (_req, res) => {
+  const rows = Object.entries(CITY_DATA)
+    .filter(([name]) => name !== 'New Delhi')
+    .map(([city, d]) => ({
+      city,
+      state: {
+        Delhi:'Delhi', Ghaziabad:'Uttar Pradesh', Mumbai:'Maharashtra',
+        Ahmedabad:'Gujarat', Surat:'Gujarat', Pune:'Maharashtra',
+        Lucknow:'Uttar Pradesh', Chandigarh:'Punjab', Kolkata:'West Bengal',
+        Chennai:'Tamil Nadu', Bengaluru:'Karnataka', Hyderabad:'Telangana',
+        Jaipur:'Rajasthan', Amritsar:'Punjab', Bhopal:'Madhya Pradesh',
+        Nagpur:'Maharashtra', Patna:'Bihar', Visakhapatnam:'Andhra Pradesh',
+      }[city] ?? 'India',
+      latitude: {
+        Delhi:28.6139, Ghaziabad:28.6692, Mumbai:19.0760, Ahmedabad:23.0225,
+        Surat:21.1702, Pune:18.5204, Lucknow:26.8467, Chandigarh:30.7333,
+        Kolkata:22.5726, Chennai:13.0827, Bengaluru:12.9716, Hyderabad:17.3850,
+        Jaipur:26.9124, Amritsar:31.6340, Bhopal:23.2599, Nagpur:21.1458,
+        Patna:25.5941, Visakhapatnam:17.6868,
+      }[city] ?? 20,
+      longitude: {
+        Delhi:77.2090, Ghaziabad:77.4538, Mumbai:72.8777, Ahmedabad:72.5714,
+        Surat:72.8311, Pune:73.8567, Lucknow:80.9462, Chandigarh:76.7794,
+        Kolkata:88.3639, Chennai:80.2707, Bengaluru:77.5946, Hyderabad:78.4867,
+        Jaipur:75.7873, Amritsar:74.8723, Bhopal:77.4126, Nagpur:79.0882,
+        Patna:85.1376, Visakhapatnam:83.2185,
+      }[city] ?? 78,
+      aqi:         predictAQI(d),
+      aqi_category: getCategory(predictAQI(d)),
+      pm25: d.pm25, pm10: d.pm10, no2: d.no2, so2: d.so2, co: d.co, o3: d.o3,
+      temperature: d.temp, humidity: d.humidity, wind_speed: d.wind_speed,
+      hcho: d.hcho, fire_count: d.fire_count,
+      date: '2024-11-10',
+    }));
+  res.json({ count: rows.length, data: rows });
+});
+
+// ── GET /api/map-data/:city ───────────────────────────────────────────────────
+router.get("/map-data/:city", (req, res) => {
+  const city = req.params.city;
+  const key  = city === 'New Delhi' ? 'Delhi' : city;
+  const d    = CITY_DATA[key];
+  if (!d) return res.status(404).json({ error: `City '${city}' not found` });
+  return res.json({
+    city: key, aqi: predictAQI(d), aqi_category: getCategory(predictAQI(d)),
+    pm25: d.pm25, pm10: d.pm10, no2: d.no2, so2: d.so2, co: d.co, o3: d.o3,
+    temperature: d.temp, humidity: d.humidity, wind_speed: d.wind_speed,
+    hcho: d.hcho, fire_count: d.fire_count, date: '2024-11-10',
+  });
+});
+
 // ── GET /api/analytics/india ──────────────────────────────────────────────────
 router.get("/analytics/india", (_req, res) => {
   res.json(buildAnalytics(null));

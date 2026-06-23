@@ -1,0 +1,418 @@
+IMPORTANT: Do NOT redesign the existing India AQI Map page.
+
+Keep the current AeroSentinel ISRO UI exactly the same:
+
+- Same map layout
+- Same dark theme
+- Same controls panel
+- Same AQI legend
+- Same styling
+- Same responsiveness
+- Same animations
+
+Only convert the India AQI Map into a fully functional, data-driven GIS intelligence dashboard.
+
+====================================================
+OBJECTIVE
+====================================================
+
+The India AQI Map must become the central intelligence layer of the platform.
+
+Users should be able to:
+
+- Explore air quality across India
+- Search cities
+- Compare pollution levels
+- View AQI distribution
+- Analyze PM2.5, NO₂, Fire and Wind layers
+- Understand pollution hotspots
+- Navigate the entire platform through map interaction
+
+====================================================
+DATA SOURCES
+====================================================
+
+Use:
+
+cpcb_data.csv
+weather_data.csv
+satellite_data.csv
+fire_data.csv
+
+Do NOT use hardcoded marker values.
+
+====================================================
+BACKEND APIs
+====================================================
+
+Create Flask APIs:
+
+GET /api/map-data
+
+Returns:
+
+city
+state
+latitude
+longitude
+aqi
+aqi_category
+pm25
+pm10
+no2
+so2
+co
+o3
+temperature
+humidity
+wind_speed
+hcho
+fire_count
+date
+
+----------------------------------------------------
+
+GET /api/map-data/<city>
+
+Returns detailed city information.
+
+====================================================
+CITY SEARCH
+====================================================
+
+Create a working city search.
+
+User can search:
+
+Ahmedabad
+Surat
+Delhi
+Mumbai
+Patna
+Bengaluru
+
+When city selected:
+
+- Zoom to city
+- Highlight city marker
+- Open popup automatically
+- Update selected city globally
+
+====================================================
+GLOBAL CITY INTEGRATION
+====================================================
+
+When a city is selected from map:
+
+Update:
+
+Dashboard
+Analytics
+HCHO Hotspots
+Fire Analysis
+AI Predict
+
+The entire platform should use the selected city.
+
+====================================================
+CITY POPUP
+====================================================
+
+When user clicks marker show:
+
+City Name
+
+State
+
+AQI Score
+
+AQI Category
+
+PM2.5
+
+PM10
+
+NO₂
+
+Temperature
+
+Humidity
+
+Wind Speed
+
+HCHO
+
+Fire Count
+
+Last Updated
+
+Example:
+
+Ahmedabad
+
+AQI: 142
+Category: Moderate
+
+PM2.5: 68
+PM10: 112
+
+NO₂: 42
+
+Temperature: 34°C
+
+Humidity: 61%
+
+Wind: 3.8 m/s
+
+HCHO: 0.00011
+
+Fire Count: 4
+
+====================================================
+AQI LAYER
+====================================================
+
+Color markers dynamically.
+
+AQI Legend:
+
+0-50 = Good (Green)
+
+51-100 = Satisfactory (Light Green)
+
+101-200 = Moderate (Yellow)
+
+201-300 = Poor (Orange)
+
+301-400 = Very Poor (Red)
+
+401+ = Severe (Purple)
+
+Markers must automatically update based on AQI values.
+
+====================================================
+PM2.5 LAYER
+====================================================
+
+Display PM2.5 concentration map.
+
+Color markers based on PM2.5 levels.
+
+====================================================
+NO₂ LAYER
+====================================================
+
+Display NO₂ distribution.
+
+Use data from satellite_data.csv.
+
+====================================================
+FIRE LAYER
+====================================================
+
+Display fire locations using:
+
+fire_data.csv
+
+Show:
+
+Fire Count
+
+Fire Intensity
+
+Fire Hotspots
+
+====================================================
+WIND LAYER
+====================================================
+
+Display:
+
+Wind Direction
+
+Wind Speed
+
+Animated wind arrows
+
+Wind flow patterns
+
+Use:
+
+weather_data.csv
+
+====================================================
+HCHO OVERLAY
+====================================================
+
+Add optional HCHO overlay.
+
+Display:
+
+HCHO concentration
+
+Hotspot intensity
+
+Color scale:
+
+Green → Yellow → Orange → Red
+
+====================================================
+HISTORICAL PLAYBACK
+====================================================
+
+Connect the playback slider to actual dates.
+
+When date changes:
+
+Map updates.
+
+Example:
+
+1 Nov → AQI Map
+
+5 Nov → AQI Map
+
+10 Nov → AQI Map
+
+User can replay AQI changes over time.
+
+====================================================
+HEATMAP MODE
+====================================================
+
+Add Heatmap toggle.
+
+When enabled:
+
+Show AQI heatmap.
+
+Green = Clean
+
+Red = Polluted
+
+Purple = Severe
+
+====================================================
+TOP POLLUTION HOTSPOTS
+====================================================
+
+Add side panel.
+
+Show:
+
+Top 10 Polluted Cities
+
+AQI
+
+PM2.5
+
+Status
+
+====================================================
+TOP CLEAN CITIES
+====================================================
+
+Show:
+
+Top 10 Cleanest Cities
+
+AQI
+
+Status
+
+====================================================
+MAP INSIGHTS PANEL
+====================================================
+
+Generate dynamic insights.
+
+Examples:
+
+Delhi AQI increased 18%.
+
+Punjab shows elevated fire activity.
+
+HCHO hotspot detected in Haryana.
+
+Wind patterns indicate pollution transport.
+
+PM2.5 is dominant pollutant.
+
+====================================================
+LOADING STATES
+====================================================
+
+Show loading skeletons.
+
+Display:
+
+Loading AQI Map...
+
+Do not freeze UI.
+
+====================================================
+ERROR HANDLING
+====================================================
+
+If city data unavailable:
+
+Show:
+
+No data available.
+
+Do not crash application.
+
+====================================================
+TECHNICAL REQUIREMENTS
+====================================================
+
+Frontend:
+
+React
+React Leaflet
+
+Backend:
+
+Flask
+
+State Management:
+
+Global selectedCity state
+
+Data:
+
+CSV-based datasets
+
+Map Updates:
+
+Real-time API-driven
+
+====================================================
+IMPORTANT
+====================================================
+
+Changing city from map:
+
+Must update:
+
+Dashboard
+Analytics
+HCHO
+Fire Analysis
+AI Predict
+
+Changing sliders in AI Predict:
+
+Must NOT affect map data.
+
+Map uses actual historical data.
+
+AI Predict uses simulation and forecasting.
+
+Keep these modules separate.
+
+====================================================
+FINAL GOAL
+====================================================
+
+Transform the current static India AQI Map into a professional ISRO-grade Air Quality Intelligence Map that allows users to explore AQI, PM2.5, NO₂, HCHO, Fire Activity, Weather and Pollution Transport across India while controlling the entire platform through city selection.
