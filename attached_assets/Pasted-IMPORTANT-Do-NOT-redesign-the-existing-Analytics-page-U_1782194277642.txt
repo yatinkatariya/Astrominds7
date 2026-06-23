@@ -1,0 +1,341 @@
+IMPORTANT: Do NOT redesign the existing Analytics page UI.
+
+Keep the current AeroSentinel ISRO design exactly the same:
+- Same charts
+- Same cards
+- Same colors
+- Same layout
+- Same responsiveness
+- Same animations
+
+Only make the Analytics page fully functional and data-driven.
+
+====================================================
+ANALYTICS PAGE OBJECTIVE
+====================================================
+
+The Analytics page should act as the Research & Intelligence Center of the platform.
+
+It must help users understand:
+
+1. How AQI changes over time.
+2. Which pollutants are causing pollution.
+3. How weather affects AQI.
+4. How biomass burning affects HCHO.
+5. How HCHO affects AQI.
+6. Which cities are most polluted.
+7. Which regions are HCHO hotspots.
+8. What insights can be extracted from the data.
+
+====================================================
+DATA SOURCES
+====================================================
+
+Use:
+
+cpcb_data.csv
+weather_data.csv
+satellite_data.csv
+fire_data.csv
+
+Do NOT use hardcoded chart values.
+
+====================================================
+GLOBAL CITY FILTER
+====================================================
+
+Analytics page must automatically respond to the globally selected city.
+
+Example:
+
+Selected City = Ahmedabad
+
+All charts update for Ahmedabad.
+
+If no city is selected:
+
+Show All India Analytics.
+
+====================================================
+SECTION 1
+AQI TREND ANALYSIS
+====================================================
+
+Chart:
+7-Day AQI Trend
+
+Data Source:
+cpcb_data.csv
+
+Purpose:
+Show AQI changes during last 7 days.
+
+----------------------------------------------------
+
+Chart:
+Monthly AQI Trend
+
+Purpose:
+Show monthly AQI averages.
+
+----------------------------------------------------
+
+Chart:
+Seasonal AQI Trend
+
+Seasons:
+
+Winter
+Summer
+Monsoon
+Post-Monsoon
+
+Purpose:
+Compare AQI across seasons.
+
+====================================================
+SECTION 2
+POLLUTANT ANALYSIS
+====================================================
+
+Chart:
+Pollutant Comparison
+
+Display:
+
+PM2.5
+PM10
+NO2
+SO2
+CO
+O3
+
+Purpose:
+Identify dominant pollutants.
+
+Add pollutant contribution percentages.
+
+Example:
+
+PM2.5 = 45%
+NO2 = 20%
+O3 = 10%
+
+====================================================
+SECTION 3
+WEATHER IMPACT ANALYSIS
+====================================================
+
+Chart:
+AQI vs Temperature
+
+Purpose:
+Show temperature impact on AQI.
+
+----------------------------------------------------
+
+Chart:
+AQI vs Humidity
+
+Purpose:
+Show humidity impact on AQI.
+
+----------------------------------------------------
+
+Chart:
+AQI vs Wind Speed
+
+Purpose:
+Show wind impact on AQI.
+
+====================================================
+SECTION 4
+ISRO FIRE & HCHO ANALYSIS
+====================================================
+
+Chart:
+Fire Count vs HCHO
+
+Data:
+
+fire_data.csv
+satellite_data.csv
+
+Purpose:
+
+Determine whether biomass burning increases HCHO.
+
+----------------------------------------------------
+
+Chart:
+Fire Count vs AQI
+
+Purpose:
+
+Determine impact of fire activity on AQI.
+
+----------------------------------------------------
+
+Chart:
+AQI vs HCHO
+
+Purpose:
+
+Determine relationship between HCHO concentration and AQI.
+
+====================================================
+SECTION 5
+HCHO HOTSPOT ANALYSIS
+====================================================
+
+Create:
+
+Top HCHO Hotspots Table
+
+Columns:
+
+Region
+State
+HCHO Value
+Fire Count
+Risk Level
+
+Sort by highest HCHO.
+
+Display:
+
+Top 10 hotspot regions.
+
+Risk Levels:
+
+Low
+Moderate
+High
+Extreme
+
+====================================================
+SECTION 6
+CITY RANKING ANALYSIS
+====================================================
+
+Top Polluted Cities
+
+Sort by AQI descending.
+
+----------------------------------------------------
+
+Top Clean Cities
+
+Sort by AQI ascending.
+
+----------------------------------------------------
+
+Display:
+
+City
+AQI
+PM2.5
+Status
+
+====================================================
+SECTION 7
+AI INSIGHTS ENGINE
+====================================================
+
+Generate dynamic insights from the available data.
+
+Examples:
+
+AQI increased by 18% this week.
+
+Fire activity increased by 25%.
+
+HCHO hotspot detected in Punjab.
+
+AQI is strongly correlated with PM2.5.
+
+Wind conditions are trapping pollutants.
+
+Biomass burning is contributing to elevated HCHO.
+
+Display 5-10 automatic insights.
+
+====================================================
+SECTION 8
+ANALYTICS API
+====================================================
+
+Create Flask APIs:
+
+GET /api/analytics/india
+
+GET /api/analytics/<city>
+
+Return:
+
+AQI Trends
+
+Pollutant Trends
+
+Weather Correlations
+
+Fire Correlations
+
+HCHO Hotspots
+
+Insights
+
+====================================================
+SECTION 9
+LOADING & ERROR STATES
+====================================================
+
+Show skeleton loaders while loading.
+
+Display:
+
+"Loading Analytics..."
+
+If no data available:
+
+"No Analytics Data Available"
+
+Do not crash.
+
+====================================================
+IMPORTANT BEHAVIOR
+====================================================
+
+Changing City:
+
+Dashboard Updates
+Analytics Updates
+HCHO Updates
+Fire Analysis Updates
+
+BUT:
+
+Changing sliders in AI Predict page should NOT affect Analytics.
+
+Analytics uses historical data.
+
+AI Predict uses simulation and forecasting.
+
+Keep these modules completely separate.
+
+====================================================
+FINAL GOAL
+====================================================
+
+The Analytics page should look and behave like an ISRO Air Quality Research Dashboard that explains:
+
+AQI Trends
+Pollutant Trends
+Weather Effects
+HCHO Hotspots
+Fire-HCHO Correlation
+Fire-AQI Correlation
+City Rankings
+Research Insights
+
+using real dataset-driven analytics.
