@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Card, CardTitle, Pill, ScoreBar, FeatBar } from '../components/Shared';
-import { ScatterChart, Scatter, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { ScatterChart, Scatter, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,Cell} from 'recharts';
 import { rand, randArr } from '../data/constants';
 
 const tt = { backgroundColor: 'rgba(15,22,46,0.95)', border: '1px solid rgba(99,179,237,0.3)', borderRadius: 8, color: '#e8eef8', fontSize: 12 };
