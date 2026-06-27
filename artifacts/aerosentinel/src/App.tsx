@@ -118,21 +118,30 @@ export default function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
 
             {/* 🔥 TELEGRAM BUTTON */}
-            <button
-              onClick={() =>window.open("https://t.me/astromine7_bot?start=website", "_blank")}
-              style={{
-                padding: '.4rem .8rem',
-                borderRadius: 6,
-                fontSize: '.75rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                border: '1px solid #229ED9',
-                background: '#229ED9',
-                color: 'white'
-              }}
-            >
-              🤖 Telegram Bot
-            </button>
+         <button
+  onClick={() => {
+    window.location.href = "https://t.me/astromine7_bot";
+  }}
+  style={{
+    padding: ".4rem .8rem",
+    borderRadius: 6,
+    border: "1px solid #229ED9",
+    background: "#229ED9",
+    color: "#fff",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  }}
+>
+  <img
+    src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg"
+    width="20"
+    height="20"
+    alt="Telegram"
+  />
+  Telegram Bot
+</button>
 
             {/* RESET */}
             <button

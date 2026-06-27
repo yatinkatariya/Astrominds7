@@ -7,201 +7,310 @@ from telegram.ext import (
     ContextTypes,
     filters
 )
-import random
 
-# BOT TOKEN (KEEP YOUR OWN)
+import pandas as pd
+import os
+
+# ==========================
+# BOT TOKEN
+# ==========================
+
 TOKEN = "8651801716:AAGWf-Ke3lvxXXQuwiZ3-lB6HpbzKBsyGaI"
 
-# Store user language
+# ==========================
+# LOAD DATASET
+# ==========================
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+CSV_PATH = os.path.join(
+    BASE_DIR,
+    "master_dataset.csv"
+)
+
+try:
+    df = pd.read_csv(CSV_PATH)
+    df["city"] = df["city"].str.lower().str.strip()
+    print("✅ Dataset Loaded Successfully")
+except Exception as e:
+    print("❌ Dataset Error:", e)
+    df = pd.DataFrame()
+
+# ==========================
+# USER LANGUAGE
+# ==========================
+
 user_languages = {}
 
+# ==========================
+# START COMMAND
+# ==========================
 
-# /start command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     args = context.args
 
     if args and args[0] == "website":
-        text = "🌍 Welcome! You came from our website 🚀\n\nSelect Your Language:"
+        title = (
+            "🌍 Welcome from AeroSentinel Website\n\n"
+            "Please select your language."
+        )
     else:
-        text = "🌍 Welcome to AQI Mitra\n\nSelect Your Language:"
+        title = (
+            "🌍 Welcome to AQI Mitra\n\n"
+            "Please select your language."
+        )
 
     keyboard = [
+
         [
-            InlineKeyboardButton("English", callback_data="lang_en"),
-            InlineKeyboardButton("हिन्दी", callback_data="lang_hi")
+            InlineKeyboardButton(
+                "English",
+                callback_data="lang_en"
+            ),
+
+            InlineKeyboardButton(
+                "ગુજરાતી",
+                callback_data="lang_gu"
+            )
         ],
+
         [
-            InlineKeyboardButton("ગુજરાતી", callback_data="lang_gu"),
-            InlineKeyboardButton("தமிழ்", callback_data="lang_ta")
-        ],
-        [
-            InlineKeyboardButton("ಕನ್ನಡ", callback_data="lang_kn"),
-            InlineKeyboardButton("বাংলা", callback_data="lang_bn")
-        ],
-        [
-            InlineKeyboardButton("తెలుగు", callback_data="lang_te"),
-            InlineKeyboardButton("മലയാളം", callback_data="lang_ml")
-        ],
-        [
-            InlineKeyboardButton("ਪੰਜਾਬੀ", callback_data="lang_pa")
+            InlineKeyboardButton(
+                "हिन्दी",
+                callback_data="lang_hi"
+            )
         ]
+
     ]
 
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(
+        title,
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+    # ==========================
+# LANGUAGE SELECT
+# ==========================
 
-    await update.message.reply_text(text, reply_markup=reply_markup)
-
-
-# Language selection
 async def language_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     query = update.callback_query
     await query.answer()
 
-    lang_code = query.data.replace("lang_", "")
-    user_languages[query.from_user.id] = lang_code
+    lang = query.data.replace("lang_", "")
+
+    user_languages[query.from_user.id] = lang
 
     messages = {
-        "en": "🏙 Please enter city or village name.",
-        "hi": "🏙 कृपया शहर या गांव का नाम दर्ज करें।",
-        "gu": "🏙 કૃપા કરીને શહેર અથવા ગામનું નામ લખો.",
-        "ta": "🏙 நகரம் அல்லது கிராமத்தின் பெயரை உள்ளிடவும்.",
-        "kn": "🏙 ನಗರ ಅಥವಾ ಗ್ರಾಮದ ಹೆಸರನ್ನು ನಮೂದಿಸಿ.",
-        "bn": "🏙 শহর বা গ্রামের নাম লিখুন।",
-        "te": "🏙 నగరం లేదా గ్రామం పేరు నమోదు చేయండి.",
-        "ml": "🏙 നഗരം അല്ലെങ്കിൽ ഗ്രാമത്തിന്റെ പേര് നൽകുക.",
-        "pa": "🏙 ਕਿਰਪਾ ਕਰਕੇ ਸ਼ਹਿਰ ਜਾਂ ਪਿੰਡ ਦਾ ਨਾਮ ਦਰਜ ਕਰੋ।"
+        "en": "🏙 Please enter city name.",
+        "gu": "🏙 કૃપા કરીને શહેરનું નામ લખો.",
+        "hi": "🏙 कृपया शहर का नाम लिखें।"
     }
 
-    await query.edit_message_text(messages.get(lang_code, messages["en"]))
+    await query.edit_message_text(
+        messages.get(lang, messages["en"])
+    )
 
 
-# Handle city input
+# ==========================
+# FIND CITY
+# ==========================
+
+def get_city_data(city):
+
+    if df.empty:
+        return None
+
+    city = city.lower().strip()
+
+    rows = df[df["city"] == city]
+
+    if rows.empty:
+        return None
+
+    return rows.iloc[-1]
+
+
+# ==========================
+# AQI CATEGORY
+# ==========================
+
+def get_aqi_category(aqi):
+
+    if aqi <= 50:
+        return (
+            "Good",
+            "Outdoor activities are safe."
+        )
+
+    elif aqi <= 100:
+        return (
+            "Satisfactory",
+            "Normal outdoor activities."
+        )
+
+    elif aqi <= 200:
+        return (
+            "Moderate",
+            "Sensitive people should wear a mask."
+        )
+
+    elif aqi <= 300:
+        return (
+            "Poor",
+            "Wear an N95 mask."
+        )
+
+    elif aqi <= 400:
+        return (
+            "Very Poor",
+            "Avoid outdoor activities."
+        )
+
+    else:
+        return (
+            "Severe",
+            "Stay indoors."
+        )
+        # ==========================
+# HANDLE USER MESSAGE
+# ==========================
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = update.effective_user.id
 
     if user_id not in user_languages:
-        await update.message.reply_text("⚠ Please use /start first and select a language.")
+        await update.message.reply_text(
+            "⚠ Please use /start first."
+        )
         return
 
     city = update.message.text.strip()
 
-    if len(city) < 2:
-        await update.message.reply_text("❌ Please enter valid city name.")
+    data = get_city_data(city)
+
+    if data is None:
+        await update.message.reply_text(
+            f"❌ City '{city}' not found in dataset."
+        )
         return
 
-    # Fake AQI data (demo)
-    aqi = random.randint(40, 350)
+    aqi = int(data["aqi"])
 
-    if aqi <= 50:
-        category = "Good"
-        advice = "Outdoor activities are safe."
-    elif aqi <= 100:
-        category = "Satisfactory"
-        advice = "Normal outdoor activities allowed."
-    elif aqi <= 200:
-        category = "Moderate"
-        advice = "Sensitive people should wear a mask."
-    elif aqi <= 300:
-        category = "Poor"
-        advice = "Wear an N95 mask outdoors."
-    else:
-        category = "Very Poor"
-        advice = "Avoid outdoor activities."
-
-    pm25 = random.randint(15, 150)
-    no2 = random.randint(5, 80)
-    so2 = random.randint(2, 25)
-
-    hcho = random.choice(["Normal", "Moderate", "High"])
-    fire = random.choice(["Low", "Moderate", "Significant"])
-
-    tomorrow_aqi = aqi + random.randint(-15, 30)
-    trend = "Increasing" if tomorrow_aqi > aqi else "Decreasing"
+    category, advice = get_aqi_category(aqi)
 
     lang = user_languages[user_id]
 
-    # RESPONSE
+    response = f"""
+📍 Location: {city.title()}
+
+🌫 AQI: {aqi}
+📊 Category: {category}
+
+💨 PM2.5: {data['pm25']}
+🌪 PM10: {data['pm10']}
+🌬 NO₂: {data['no2']}
+☁ SO₂: {data['so2']}
+🟤 CO: {data['co']}
+🔵 O₃: {data['o3']}
+
+🧪 HCHO: {data['hcho']}
+🌫 AOD: {data['aod']}
+🔥 Fire Count: {data['fire_count']}
+
+🌡 Temperature: {data['temp']}°C
+💧 Humidity: {data['humidity']}%
+💨 Wind Speed: {data['wind_speed']} m/s
+
+💡 Health Advice:
+{advice}
+"""
+
     if lang == "gu":
+
         response = f"""
-📍 સ્થાન: {city}
+📍 સ્થાન: {city.title()}
 
 🌫 AQI: {aqi}
 📊 શ્રેણી: {category}
 
-💨 PM2.5: {pm25}
-🌬 NO₂: {no2}
-☁ SO₂: {so2}
+💨 PM2.5: {data['pm25']}
+🌪 PM10: {data['pm10']}
+🌬 NO₂: {data['no2']}
+☁ SO₂: {data['so2']}
+🟤 CO: {data['co']}
+🔵 O₃: {data['o3']}
 
-🧪 HCHO: {hcho}
-🔥 આગની અસર: {fire}
+🧪 HCHO: {data['hcho']}
+🌫 AOD: {data['aod']}
+🔥 Fire Count: {data['fire_count']}
 
-📈 AI આગાહી:
-આવતીકાલનું AQI: {tomorrow_aqi}
-ટ્રેન્ડ: {trend}
+🌡 તાપમાન: {data['temp']}°C
+💧 ભેજ: {data['humidity']}%
+💨 પવન: {data['wind_speed']} m/s
 
 💡 આરોગ્ય સલાહ:
 {advice}
 """
 
     elif lang == "hi":
+
         response = f"""
-📍 स्थान: {city}
+📍 स्थान: {city.title()}
 
 🌫 AQI: {aqi}
 📊 श्रेणी: {category}
 
-💨 PM2.5: {pm25}
-🌬 NO₂: {no2}
-☁ SO₂: {so2}
+💨 PM2.5: {data['pm25']}
+🌪 PM10: {data['pm10']}
+🌬 NO₂: {data['no2']}
+☁ SO₂: {data['so2']}
+🟤 CO: {data['co']}
+🔵 O₃: {data['o3']}
 
-🧪 HCHO: {hcho}
-🔥 आग का प्रभाव: {fire}
+🧪 HCHO: {data['hcho']}
+🌫 AOD: {data['aod']}
+🔥 Fire Count: {data['fire_count']}
 
-📈 AI पूर्वानुमान:
-कल का AQI: {tomorrow_aqi}
-ट्रेंड: {trend}
+🌡 तापमान: {data['temp']}°C
+💧 आर्द्रता: {data['humidity']}%
+💨 हवा: {data['wind_speed']} m/s
 
 💡 स्वास्थ्य सलाह:
 {advice}
 """
 
-    else:
-        response = f"""
-📍 Location: {city}
-
-🌫 AQI: {aqi}
-📊 Category: {category}
-
-💨 PM2.5: {pm25}
-🌬 NO₂: {no2}
-☁ SO₂: {so2}
-
-🧪 HCHO: {hcho}
-🔥 Fire Impact: {fire}
-
-📈 AI Prediction:
-Tomorrow AQI: {tomorrow_aqi}
-Trend: {trend}
-
-💡 Health Advice:
-{advice}
-"""
-
     await update.message.reply_text(response)
+    # ==========================
+# MAIN FUNCTION
+# ==========================
 
-
-# MAIN
 def main():
+
     app = Application.builder().token(TOKEN).build()
 
+    # Commands
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(language_selected, pattern="^lang_"))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    print("🚀 AQI Telegram Bot Running...")
+    # Language button callback
+    app.add_handler(
+        CallbackQueryHandler(
+            language_selected,
+            pattern="^lang_"
+        )
+    )
+
+    # Handle city name messages
+    app.add_handler(
+        MessageHandler(
+            filters.TEXT & ~filters.COMMAND,
+            handle_message
+        )
+    )
+
+    print("🚀 AQI Mitra Bot Started Successfully...")
+
     app.run_polling()
 
 
