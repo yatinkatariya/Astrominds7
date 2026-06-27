@@ -14,19 +14,19 @@ const tt = { backgroundColor: 'rgba(15,22,46,0.95)', border: '1px solid rgba(99,
 interface AnalyticsData {
   city: string;
   baseAqi: number;
-  trend7d:        Array<{ day: string; aqi: number; pm25: number; no2: number }>;
-  monthlyTrend:   Array<{ month: string; aqi: number }>;
-  seasonalData:   Array<{ season: string; aqi: number }>;
-  pollutants:     Array<{ name: string; pct: number; value: number; unit: string; color: string }>;
-  pollutantTrend: Array<{ day: string; [k: string]: string | number }>;
-  histData:       Array<{ range: string; count: number; color: string }>;
-  scatterTemp:    Array<{ x: number; y: number }>;
-  scatterHum:     Array<{ x: number; y: number }>;
-  scatterWind:    Array<{ x: number; y: number }>;
-  fireHcho:       Array<{ city: string; fire: number; hcho: number; aqi: number }>;
-  hchoHotspots:   Array<{ region: string; state: string; hcho: number; fire: number; risk: string }>;
-  cityRankings:   { polluted: Array<{ city: string; aqi: number; pm25: number; status: string }>; clean: Array<{ city: string; aqi: number; pm25: number; status: string }> };
-  insights:       Array<{ icon: string; severity: string; text: string }>;
+  trend7d: Array<{ day: string; aqi: number; pm25: number; no2: number }>;
+  monthlyTrend: Array<{ month: string; aqi: number }>;
+  seasonalData: Array<{ season: string; aqi: number }>;
+  pollutants: Array<{ name: string; pct: number; value: number; unit: string; color: string }>;
+  pollutantTrend: Array<{ day: string;[k: string]: string | number }>;
+  histData: Array<{ range: string; count: number; color: string }>;
+  scatterTemp: Array<{ x: number; y: number }>;
+  scatterHum: Array<{ x: number; y: number }>;
+  scatterWind: Array<{ x: number; y: number }>;
+  fireHcho: Array<{ city: string; fire: number; hcho: number; aqi: number }>;
+  hchoHotspots: Array<{ region: string; state: string; hcho: number; fire: number; risk: string }>;
+  cityRankings: { polluted: Array<{ city: string; aqi: number; pm25: number; status: string }>; clean: Array<{ city: string; aqi: number; pm25: number; status: string }> };
+  insights: Array<{ icon: string; severity: string; text: string }>;
 }
 
 // ── Skeleton loader ───────────────────────────────────────────────────────────
@@ -37,20 +37,22 @@ function Skeleton({ h = 220 }: { h?: number }) {
 }
 
 const riskColor: Record<string, string> = { Extreme: '#ef4444', High: '#f97316', Moderate: '#eab308', Low: '#22c55e' };
-const sevColor:  Record<string, string> = { red: '#ef4444', orange: '#f97316', green: '#22c55e', blue: '#3b82f6' };
+const sevColor: Record<string, string> = { red: '#ef4444', orange: '#f97316', green: '#22c55e', blue: '#3b82f6' };
 
 export default function Analytics() {
   const { selectedCity } = useCity();
-  const [data, setData]     = useState<AnalyticsData | null>(null);
+  const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     setLoading(true);
     setError('');
+    const API = import.meta.env.VITE_API_URL;
+
     const url = selectedCity
-      ? `/api/analytics/${encodeURIComponent(selectedCity)}`
-      : '/api/analytics/india';
+      ? `${API}/api/analytics/${encodeURIComponent(selectedCity)}`
+      : `${API}/api/analytics/india`;
     fetch(url)
       .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then((d: AnalyticsData) => { setData(d); setLoading(false); })
@@ -113,9 +115,9 @@ export default function Analytics() {
                   <YAxis tick={{ fill: '#8fa3c4', fontSize: 10 }} />
                   <Tooltip contentStyle={tt} />
                   <Legend wrapperStyle={{ color: '#8fa3c4', fontSize: 11 }} />
-                  <Line type="monotone" dataKey="aqi"  name="AQI"   stroke="#ef4444" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="aqi" name="AQI" stroke="#ef4444" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="pm25" name="PM2.5" stroke="#f97316" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
-                  <Line type="monotone" dataKey="no2"  name="NO₂"   stroke="#eab308" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
+                  <Line type="monotone" dataKey="no2" name="NO₂" stroke="#eab308" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -129,7 +131,7 @@ export default function Analytics() {
                 <AreaChart data={data?.monthlyTrend ?? []}>
                   <defs>
                     <linearGradient id="aqiGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#06b6d4" stopOpacity={0.3} />
+                      <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
                       <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
@@ -159,9 +161,9 @@ export default function Analytics() {
                   <Tooltip contentStyle={tt} />
                   <Legend wrapperStyle={{ color: '#8fa3c4', fontSize: 11 }} />
                   <Line type="monotone" dataKey="PM2.5" stroke="#ef4444" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="NO₂"   stroke="#eab308" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="O₃"    stroke="#3b82f6" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="SO₂"   stroke="#22c55e" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="NO₂" stroke="#eab308" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="O₃" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="SO₂" stroke="#22c55e" strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
