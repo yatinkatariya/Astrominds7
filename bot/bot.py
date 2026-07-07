@@ -15,7 +15,7 @@ import os
 # BOT TOKEN
 # ==========================
 
-TOKEN = os.getenv("TOKEN")
+TOKEN = "8651801716:AAGWf-Ke3lvxXXQuwiZ3-lB6HpbzKBsyGaI"
 if TOKEN:
     print("Token prefix:", TOKEN[:10])
 else:
