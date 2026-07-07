@@ -16,6 +16,10 @@ import os
 # ==========================
 
 TOKEN = os.getenv("TOKEN")
+if TOKEN:
+    print("Token prefix:", TOKEN[:10])
+else:
+    print("TOKEN environment variable is missing!")
 
 # ==========================
 # BOT TOKEN
