@@ -7,7 +7,7 @@ from telegram.ext import (
     ContextTypes,
     filters
 )
-
+import asyncio
 import pandas as pd
 import os
 
@@ -15,7 +15,12 @@ import os
 # BOT TOKEN
 # ==========================
 
-TOKEN = "8651801716:AAGWf-Ke3lvxXXQuwiZ3-lB6HpbzKBsyGaI"
+TOKEN = os.getenv("TOKEN")
+
+# ==========================
+# BOT TOKEN
+# ==========================
+
 
 # ==========================
 # LOAD DATASET
@@ -315,4 +320,5 @@ def main():
 
 
 if __name__ == "__main__":
+    asyncio.set_event_loop(asyncio.new_event_loop())
     main()
