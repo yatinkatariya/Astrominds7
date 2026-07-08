@@ -7,28 +7,52 @@ from telegram.ext import (
     ContextTypes,
     filters
 )
+
+from flask import Flask
+import threading
 import asyncio
 import pandas as pd
 import os
 
-# ==========================
-# BOT TOKEN
-# ==========================
+# =====================================
+# TOKEN
+# =====================================
 
-TOKEN = "8651801716:AAGWf-Ke3lvxXXQuwiZ3-lB6HpbzKBsyGaI"
+TOKEN = os.getenv("TOKEN")
+
+# For local testing only
+if not TOKEN:
+    TOKEN = "YOUR_BOT_TOKEN_HERE"
+
 if TOKEN:
-    print("Token prefix:", TOKEN[:10])
+    print("✅ Token Loaded")
 else:
-    print("TOKEN environment variable is missing!")
+    raise ValueError("TOKEN environment variable is missing!")
 
-# ==========================
-# BOT TOKEN
-# ==========================
+# =====================================
+# FLASK SERVER (Required for Render)
+# =====================================
 
+web_app = Flask(__name__)
 
-# ==========================
+@web_app.route("/")
+def home():
+    return "AQI Mitra Bot is Running!"
+
+@web_app.route("/health")
+def health():
+    return {"status": "ok"}
+
+def run_web():
+    port = int(os.environ.get("PORT", 10000))
+    web_app.run(
+        host="0.0.0.0",
+        port=port
+    )
+
+# =====================================
 # LOAD DATASET
-# ==========================
+# =====================================
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -38,33 +62,47 @@ CSV_PATH = os.path.join(
 )
 
 try:
+
     df = pd.read_csv(CSV_PATH)
-    df["city"] = df["city"].str.lower().str.strip()
+
+    df["city"] = (
+        df["city"]
+        .astype(str)
+        .str.lower()
+        .str.strip()
+    )
+
     print("✅ Dataset Loaded Successfully")
+
 except Exception as e:
+
     print("❌ Dataset Error:", e)
+
     df = pd.DataFrame()
 
-# ==========================
+# =====================================
 # USER LANGUAGE
-# ==========================
+# =====================================
 
 user_languages = {}
 
-# ==========================
+# =====================================
 # START COMMAND
-# ==========================
+# =====================================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     args = context.args
 
     if args and args[0] == "website":
+
         title = (
             "🌍 Welcome from AeroSentinel Website\n\n"
             "Please select your language."
         )
+
     else:
+
         title = (
             "🌍 Welcome to AQI Mitra\n\n"
             "Please select your language."
@@ -97,13 +135,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         title,
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
-    # ==========================
+
+# =====================================
 # LANGUAGE SELECT
-# ==========================
+# =====================================
 
 async def language_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     query = update.callback_query
+
     await query.answer()
 
     lang = query.data.replace("lang_", "")
@@ -111,19 +151,21 @@ async def language_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_languages[query.from_user.id] = lang
 
     messages = {
+
         "en": "🏙 Please enter city name.",
+
         "gu": "🏙 કૃપા કરીને શહેરનું નામ લખો.",
+
         "hi": "🏙 कृपया शहर का नाम लिखें।"
+
     }
 
     await query.edit_message_text(
         messages.get(lang, messages["en"])
     )
-
-
-# ==========================
+    # =====================================
 # FIND CITY
-# ==========================
+# =====================================
 
 def get_city_data(city):
 
@@ -140,9 +182,9 @@ def get_city_data(city):
     return rows.iloc[-1]
 
 
-# ==========================
+# =====================================
 # AQI CATEGORY
-# ==========================
+# =====================================
 
 def get_aqi_category(aqi):
 
@@ -161,38 +203,42 @@ def get_aqi_category(aqi):
     elif aqi <= 200:
         return (
             "Moderate",
-            "Sensitive people should wear a mask."
+            "Sensitive people should wear an N95 mask."
         )
 
     elif aqi <= 300:
         return (
             "Poor",
-            "Wear an N95 mask."
+            "Wear an N95 mask and reduce outdoor activities."
         )
 
     elif aqi <= 400:
         return (
             "Very Poor",
-            "Avoid outdoor activities."
+            "Avoid outdoor activities whenever possible."
         )
 
     else:
         return (
             "Severe",
-            "Stay indoors."
+            "Stay indoors and keep windows closed."
         )
-        # ==========================
+
+
+# =====================================
 # HANDLE USER MESSAGE
-# ==========================
+# =====================================
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = update.effective_user.id
 
     if user_id not in user_languages:
+
         await update.message.reply_text(
             "⚠ Please use /start first."
         )
+
         return
 
     city = update.message.text.strip()
@@ -200,12 +246,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = get_city_data(city)
 
     if data is None:
+
         await update.message.reply_text(
             f"❌ City '{city}' not found in dataset."
         )
+
         return
 
-    aqi = int(data["aqi"])
+    try:
+        aqi = int(data["aqi"])
+    except:
+        aqi = 0
 
     category, advice = get_aqi_category(aqi)
 
@@ -291,18 +342,23 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 """
 
     await update.message.reply_text(response)
-    # ==========================
+    # =====================================
 # MAIN FUNCTION
-# ==========================
+# =====================================
 
 def main():
 
     app = Application.builder().token(TOKEN).build()
 
-    # Commands
-    app.add_handler(CommandHandler("start", start))
+    # Start command
+    app.add_handler(
+        CommandHandler(
+            "start",
+            start
+        )
+    )
 
-    # Language button callback
+    # Language buttons
     app.add_handler(
         CallbackQueryHandler(
             language_selected,
@@ -310,7 +366,7 @@ def main():
         )
     )
 
-    # Handle city name messages
+    # City messages
     app.add_handler(
         MessageHandler(
             filters.TEXT & ~filters.COMMAND,
@@ -319,10 +375,30 @@ def main():
     )
 
     print("🚀 AQI Mitra Bot Started Successfully...")
+    print("🌐 Flask Health Server Started...")
+    print("🤖 Telegram Bot Polling Started...")
 
-    app.run_polling()
+    app.run_polling(
+        drop_pending_updates=True
+    )
 
+
+# =====================================
+# PROGRAM START
+# =====================================
 
 if __name__ == "__main__":
-    asyncio.set_event_loop(asyncio.new_event_loop())
+
+    # Start Flask server in background
+    threading.Thread(
+        target=run_web,
+        daemon=True
+    ).start()
+
+    # Create event loop
+    asyncio.set_event_loop(
+        asyncio.new_event_loop()
+    )
+
+    # Start Telegram Bot
     main()
